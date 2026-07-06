@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>멀티클라우드 AIOps MSP 플랫폼 — 기획 보고 (2026-07-06)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root { --brand-coral:#FF4D6D; --brand-gold:#FFB800; }
+  body { font-family:'Pretendard',sans-serif; background:#0B0F19; color:#E2E8F0; }
+  .coral { color:var(--brand-coral); } .gold { color:var(--brand-gold); }
+  .card { background:#131A2A; border:1px solid #1E293B; border-radius:14px; }
+  .rec { border:1.5px solid var(--brand-gold); box-shadow:0 0 24px rgba(255,184,0,.08); }
+  th { position:sticky; top:0; background:#1A2336; }
+  .pass{color:#4ADE80} .fail{color:#F87171} .warn{color:#FBBF24}
+  .copybtn { background:#1E293B; border:1px solid #334155; border-radius:8px; padding:4px 12px; font-size:12px; color:#94A3B8; cursor:pointer; }
+  .copybtn:hover { border-color:var(--brand-coral); color:#fff; }
+</style>
+</head>
+<body class="p-6 md:p-10 max-w-6xl mx-auto">
+
+<!-- 헤더 -->
+<header class="mb-10">
+  <div class="text-xs text-slate-500 mb-2">MODU DDAL-KKAK AI Inc. · Fable 5 기획 · 2026-07-06</div>
+  <h1 class="text-3xl font-bold mb-3">멀티클라우드 <span class="coral">AIOps MSP</span> 플랫폼 기획</h1>
+  <p class="text-slate-300 text-lg">한 줄 요약 — <b class="gold">SCP v2 + AWS 고객사들을 한 콘솔에서 관제하는 멀티테넌트 AIOps.
+  중앙(SaaS) 모드 기본, 플랫폼 이용 불가 고객은 고객 클라우드에 전용 설치. 라이선스가 구성을 분기하며 코드베이스는 하나.</b></p>
+  <p class="text-slate-500 text-sm mt-2">프로젝트: <code>C:\AI_Projects\ddalkkak_Aiops</code> (CEO 소속 회사 업무용 · WAPLO와 별개) · 상세 스펙: <code>docs/superpowers/specs/2026-07-06-aiops-msp-design.md</code></p>
+</header>
+
+<!-- 접근안 비교 -->
+<section class="mb-10">
+  <h2 class="text-xl font-bold mb-4 coral">1. 접근안 비교</h2>
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="card rec p-5">
+      <div class="gold font-bold mb-1">★ 추천 — A+B 하이브리드</div>
+      <div class="text-sm text-slate-300 leading-relaxed">컨트롤플레인(테넌트·라이선스·알림·AI·콘솔) 자체 개발 +
+      저장 계층은 오픈소스(VictoriaMetrics·Loki) 채택.<br><span class="text-slate-400">차별화(SCP 지원·멀티테넌트·Dedicated·AI)는 직접 만들고, 차별화 아닌 것은 안 만든다.</span></div>
+    </div>
+    <div class="card p-5">
+      <div class="font-bold mb-1 text-slate-200">B. 오픈소스 조립</div>
+      <div class="text-sm text-slate-400 leading-relaxed">Grafana/Prometheus 등 + 글루 코드. 빠르지만 멀티테넌트 MSP 요구·라이선스 게이팅·Dedicated 경량 패키징에 구조적 한계.</div>
+    </div>
+    <div class="card p-5">
+      <div class="font-bold mb-1 text-slate-200">C. 상용 재판매</div>
+      <div class="text-sm text-slate-400 leading-relaxed">Datadog/OpsRamp 등. <span class="fail">SCP 미지원 · Dedicated 불가</span> — 요구사항 자체가 성립 안 함.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 배포 모델 -->
+<section class="mb-10">
+  <h2 class="text-xl font-bold mb-4 coral">2. 배포 모델 (핵심 요구)</h2>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <div class="font-bold gold mb-2">Mode C — Central (MSP 운영센터)</div>
+      <ul class="text-sm text-slate-300 space-y-1 list-disc list-inside">
+        <li>멀티테넌트 컨트롤플레인 — 전 고객사 한 콘솔 관제</li>
+        <li><b>C-1 Agentless</b>: 최소권한 API 자격증명 등록 → 중앙 pull</li>
+        <li><b>C-2 Collector</b>: 고객 VPC 내 수집기 → outbound TLS 단방향</li>
+      </ul>
+    </div>
+    <div class="card p-5">
+      <div class="font-bold gold mb-2">Mode D — Dedicated (고객 클라우드 설치)</div>
+      <ul class="text-sm text-slate-300 space-y-1 list-disc list-inside">
+        <li>고객 SCP/AWS 계정에 전체 스택 설치 · 단일 테넌트</li>
+        <li>폐쇄망 지원: 오프라인 라이선스(Ed25519) + 서명 업데이트 번들</li>
+        <li>콜홈 기본 off — 고객 동의 시만</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card p-4 mt-4 text-sm"><span class="warn">⚠ 원칙</span> — 단일 코드베이스 + <code>deployment_profile</code> + 라이선스 flag로만 분기. 빌드 포크 절대 금지 (Dedicated 버전 파편화 = 최대 유지보수 리스크).</div>
+</section>
+
+<!-- AI 계층 -->
+<section class="mb-10">
+  <h2 class="text-xl font-bold mb-4 coral">3. AIOps 기능 계층 · 로드맵</h2>
+  <div class="card p-5 overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead><tr class="text-slate-400"><th class="p-2">레벨</th><th class="p-2">기능</th><th class="p-2">단계</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-2">L1</td><td class="p-2">룰/임계치 알림 · 통합 대시보드 · 테넌트 온보딩 · RBAC</td><td class="p-2 pass">P1 MVP</td></tr>
+        <tr><td class="p-2">L2+L3</td><td class="p-2">통계 이상탐지(동적 베이스라인) + 알람 노이즈 억제 <span class="text-slate-500">(한 세트 — 탐지만 넣으면 노이즈로 신뢰 상실)</span></td><td class="p-2 warn">P2</td></tr>
+        <tr><td class="p-2">L4</td><td class="p-2">LLM 어시스턴트 — 인시던트 요약·RCA 추천·월간보고서 초안 자동화</td><td class="p-2 warn">P2~3</td></tr>
+        <tr><td class="p-2">L5</td><td class="p-2">Runbook 자동조치 — <b>인간 승인 게이트 필수</b> (AI 추천, 사람 결정)</td><td class="p-2 fail">P3</td></tr>
+        <tr><td class="p-2">—</td><td class="p-2">Dedicated 패키징·에어갭 / 셀프서비스 포털·FinOps</td><td class="p-2 fail">P3 / P4</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card p-4 mt-4 text-sm text-slate-300"><b class="gold">P0 (1~2주, Council 모드)</b> — SCP v2 API 인벤토리 <b>실측</b>(메트릭·이벤트·로그·비용 가능/불가 표) + AWS 교차계정 PoC + 스택·이름 확정. <span class="warn">⚠ SCP 이벤트·비용 API 커버리지가 이 기획의 1순위 리스크</span> — 갭은 노드 에이전트 수집으로 우회 가능.</div>
+</section>
+
+<!-- 리스크 체크리스트 -->
+<section class="mb-10">
+  <h2 class="text-xl font-bold mb-4 coral">4. Premortem 리스크</h2>
+  <div class="card p-5 text-sm space-y-2">
+    <div><span class="fail">■ 높음</span> SCP v2 API 커버리지 부족 → P0 실측 최우선 · 에이전트 우회로 확보</div>
+    <div><span class="fail">■ 높음</span> 고객 자격증명 유출(사업 종료급) → envelope encryption·최소권한 role 분리·감사로그 5년</div>
+    <div><span class="warn">■ 중간</span> Dedicated 버전 파편화 → 단일 코드베이스 강제 · 지원 버전 N-1 정책</div>
+    <div><span class="warn">■ 중간</span> 알람 노이즈로 운영팀 신뢰 상실 → L2·L3 한 세트 출시</div>
+    <div><span class="pass">■ 관리</span> 폐쇄망 LLM 불가 → LLM 게이트웨이 추상화(사내 LLM 주입) + 라이선스 게이팅</div>
+    <div><span class="pass">■ 관리</span> 외산(Datadog) 경쟁 → SCP+AWS 동시 지원 · 한국 MSP 실무 특화(월간보고·정기점검·에어갭)</div>
+  </div>
+</section>
+
+<!-- CEO 결정 -->
+<section class="mb-10">
+  <h2 class="text-xl font-bold mb-4 coral">5. CEO 결정 필요 (ack 게이트) — 9건</h2>
+  <div class="card p-5 overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead><tr class="text-slate-400"><th class="p-2">#</th><th class="p-2">항목</th><th class="p-2">Fable 추천</th></tr></thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-2">1</td><td class="p-2">repo 이름·위치</td><td class="p-2 pass">✅ 확정 — <code>C:\AI_Projects\ddalkkak_Aiops</code></td></tr>
+        <tr><td class="p-2">2</td><td class="p-2">사업 주체</td><td class="p-2 pass">✅ 확정 — CEO 소속 회사 업무용 (WAPLO 별개, AI 조직 룰은 동일 적용)</td></tr>
+        <tr><td class="p-2">3</td><td class="p-2">클라우드 착수 순서</td><td class="p-2">설계 동시 · P0 실측은 <b>SCP 먼저</b> (리스크 위치)</td></tr>
+        <tr><td class="p-2">4</td><td class="p-2">Central 호스팅 위치</td><td class="p-2">자사 상황 따라 — 후보 SCP/AWS</td></tr>
+        <tr><td class="p-2">5</td><td class="p-2">에디션·가격 (Central / Ded.Standard / Ded.AI / Add-on)</td><td class="p-2">CFO 시뮬레이션 후 확정</td></tr>
+        <tr><td class="p-2">6</td><td class="p-2">완전 에어갭 고객 실존 여부</td><td class="p-2 warn">오프라인 업데이트 투자 규모 좌우</td></tr>
+        <tr><td class="p-2">7</td><td class="p-2">ITSM — 자체 모듈 vs Jira 연동</td><td class="p-2">P2까지 자체 경량 모듈 추천</td></tr>
+        <tr><td class="p-2">8</td><td class="p-2">LLM 공급</td><td class="p-2">Central=Anthropic API · Dedicated=게이트웨이 주입</td></tr>
+        <tr><td class="p-2">9</td><td class="p-2">Collector 언어</td><td class="p-2">Python 시작 → P3 전 Go 전환 검토</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <button class="copybtn mt-4" onclick="copyPrompt()">📋 결정 답변용 프롬프트 복사</button>
+  <span id="copied" class="text-xs pass ml-2 hidden">복사됨!</span>
+</section>
+
+<footer class="text-xs text-slate-600 border-t border-slate-800 pt-4">
+  Fable 5 (기획 전담·코딩 금지) · 다음 단계: CEO 결정 → P0 Council 모드 → 구현 계획서 → Sonnet 워커 디스패치
+</footer>
+
+<script>
+function copyPrompt(){
+  const t=`AIOps MSP 플랫폼 기획(2026-07-06) 잔여 결정 답변 (1·2번은 확정됨):
+3. 클라우드 착수 순서:
+4. Central 호스팅 위치:
+5. 에디션·가격:
+6. 에어갭 고객 실존 여부:
+7. ITSM(자체/Jira):
+8. LLM 공급:
+9. Collector 언어:
+위 결정 반영해서 P0 진행해줘.`;
+  navigator.clipboard.writeText(t).then(()=>{document.getElementById('copied').classList.remove('hidden');});
+}
+</script>
+</body>
+</html>
