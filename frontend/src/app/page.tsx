@@ -1541,154 +1541,117 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-6 bg-[#1e293b] border border-[#334155] p-5 rounded shadow-sm">
-                <style>{`
-                  @keyframes waveDash {
-                    to {
-                      stroke-dashoffset: -20;
-                    }
-                  }
-                  .animate-wave-dash {
-                    stroke-dasharray: 6 3;
-                    animation: waveDash 1.5s linear infinite;
-                  }
-                  @keyframes neonPulseCyan {
-                    0%, 100% { box-shadow: 0 0 6px rgba(6, 182, 212, 0.4), inset 0 0 3px rgba(6, 182, 212, 0.2); border-color: rgba(6, 182, 212, 0.6); }
-                    50% { box-shadow: 0 0 16px rgba(6, 182, 212, 0.8), inset 0 0 8px rgba(6, 182, 212, 0.4); border-color: rgba(34, 211, 238, 1); }
-                  }
-                  @keyframes neonPulseOrange {
-                    0%, 100% { box-shadow: 0 0 6px rgba(236, 114, 17, 0.4), inset 0 0 3px rgba(236, 114, 17, 0.2); border-color: rgba(236, 114, 17, 0.6); }
-                    50% { box-shadow: 0 0 16px rgba(236, 114, 17, 0.8), inset 0 0 8px rgba(236, 114, 17, 0.4); border-color: rgba(251, 146, 60, 1); }
-                  }
-                  .neon-active-cyan {
-                    animation: neonPulseCyan 2.5s infinite alternate;
-                    color: #22d3ee !important;
-                  }
-                  .neon-active-orange {
-                    animation: neonPulseOrange 2.5s infinite alternate;
-                    color: #fb923c !important;
-                  }
-                  .neon-inactive {
-                    border-color: #334155 !important;
-                    background-color: rgba(15, 23, 42, 0.4) !important;
-                    color: #94a3b8 !important;
-                  }
-                `}</style>
+              {/* 📊 Row 1: AIOps 4대 Golden Signals KPI 스탯 카드 그리드 */}
+              <div className="grid grid-cols-4 gap-6">
                 
-                {/* 1. 인스턴스 헬스 (서버 랙 LED & 원형 게이지) */}
-                <div className="border border-slate-700/60 rounded-lg p-4 bg-slate-900/40 flex items-center justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <span className="text-[10px] font-extrabold text-slate-300 tracking-wider uppercase block">🖥️ INSTANCE HEALTH</span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-slate-100">
-                        {topology.nodes.length > 0 && topology.nodes.some((n: any) => n.status === 'warning') ? '92.5%' : '100%'}
-                      </span>
-                      <span className={`text-[9px] font-bold ${topology.nodes.some((n: any) => n.status === 'warning') ? 'text-[#ec7211]' : 'text-[#1d8102]'}`}>
-                        {topology.nodes.some((n: any) => n.status === 'warning') ? 'Warning' : 'Optimal'}
-                      </span>
-                    </div>
-                    {/* LED 서버 랙 모의 그리드 */}
-                    <div className="flex gap-1 pt-1.5 flex-wrap">
-                      {topology.nodes.map((node: any) => (
-                        <span 
-                          key={node.id} 
-                          title={node.label}
-                          className={`h-3.5 w-2.5 rounded-sm inline-block shadow-sm transition-all ${node.status === 'warning' ? 'bg-[#ec7211] animate-pulse' : (node.status === 'stopped' ? 'bg-gray-300' : 'bg-[#1d8102]')}`} 
-                        />
-                      ))}
-                      {/* 여분 LED 패널 (랙 채우기용) */}
-                      {topology.nodes.length < 8 && [1, 2, 3, 4].map(i => (
-                        <span key={i} className="h-3.5 w-2.5 rounded-sm bg-[#1d8102] opacity-40 inline-block" />
-                      ))}
-                    </div>
-                    <span className="text-[8px] text-slate-400 font-mono block">LED Rack: Green (Active) / Orange (Warning)</span>
+                {/* KPI Card 1: System Health (종합 헬스 상태) */}
+                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">System Health</span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black font-mono border ${
+                      incidents.some((i: any) => i.status === 'OPEN' && i.severity === 'CRITICAL')
+                        ? 'bg-red-950/40 text-[#ef4444] border-red-900/30'
+                        : incidents.some((i: any) => i.status === 'OPEN')
+                          ? 'bg-amber-950/40 text-[#f59e0b] border-amber-900/30'
+                          : 'bg-emerald-950/40 text-[#10b981] border-emerald-900/30'
+                    }`}>
+                      {incidents.some((i: any) => i.status === 'OPEN' && i.severity === 'CRITICAL') ? 'CRITICAL' : incidents.some((i: any) => i.status === 'OPEN') ? 'DEGRADED' : 'HEALTHY'}
+                    </span>
                   </div>
                   
-                  {/* SVG 원형 진행 게이지 */}
-                  <div className="relative h-16 w-16 flex items-center justify-center flex-shrink-0">
-                    <svg className="absolute transform -rotate-90 w-full h-full">
-                      <circle cx="32" cy="32" r="26" stroke="#334155" strokeWidth="4" fill="transparent" />
-                      <circle 
-                        cx="32" 
-                        cy="32" 
-                        r="26" 
-                        stroke={topology.nodes.some((n: any) => n.status === 'warning') ? '#ec7211' : '#1d8102'} 
-                        strokeWidth="4" 
-                        fill="transparent" 
-                        strokeDasharray="163" 
-                        strokeDashoffset={topology.nodes.some((n: any) => n.status === 'warning') ? '15' : '0'} 
-                        className="transition-all duration-1000" 
-                      />
+                  <div className="my-2.5 flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight text-slate-100 font-sans num">
+                      {incidents.some((i: any) => i.status === 'OPEN') ? '92.5%' : '100%'}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">baseline</span>
+                  </div>
+                  
+                  {/* 미니 Sparkline (SVG) */}
+                  <div className="h-[25px] w-full mt-1.5 opacity-60">
+                    <svg viewBox="0 0 100 20" className="w-full h-full" preserveAspectRatio="none">
+                      <path d="M 0 5 L 15 6 L 30 5 L 45 4 L 60 5 L 75 14 L 90 5 L 100 6" fill="none" stroke="#10b981" strokeWidth="1.8" />
                     </svg>
-                    <span className={`text-[9px] font-black font-mono ${topology.nodes.some((n: any) => n.status === 'warning') ? 'text-[#ec7211]' : 'text-[#1d8102]'}`}>
-                      {topology.nodes.some((n: any) => n.status === 'warning') ? 'ALERT' : 'STABLE'}
-                    </span>
                   </div>
+                  <div className="text-[8.5px] text-slate-500 font-mono mt-1">vs. last 24 hours</div>
                 </div>
 
-                {/* 2. 네트워크 품질 흐름 (맥동 그래프 & 스위치) */}
-                <div className="border border-slate-700/60 rounded-lg p-4 bg-slate-900/40 flex items-center justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <span className="text-[10px] font-extrabold text-slate-300 tracking-wider uppercase block">📡 NETWORK QUALITY FLOW</span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-slate-100">
-                        {networkPaths.dedicated.status === 'ACTIVE' ? '850 Mbps' : '450 Mbps'}
-                      </span>
-                      <span className={`text-[9px] font-bold ${networkPaths.dedicated.status === 'ACTIVE' ? 'text-[#1d8102]' : 'text-[#ec7211]'}`}>
-                        {networkPaths.dedicated.status === 'ACTIVE' ? 'Latency: 12ms' : 'Latency: 45ms (Bypass)'}
-                      </span>
-                    </div>
-                    
-                    {/* 실시간 맥동 네트워크 웨이브 라인 애니메이션 (SVG) */}
-                    <div className="h-4 w-full overflow-hidden relative opacity-70">
-                      <svg viewBox="0 0 100 20" className="w-full h-full">
-                        <path 
-                          d="M0,10 Q15,2 30,10 T60,10 T90,10" 
-                          fill="transparent" 
-                          stroke={networkPaths.dedicated.status === 'ACTIVE' ? '#1d8102' : '#ec7211'} 
-                          strokeWidth="2.5"
-                          className="animate-wave-dash"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-[8px] text-slate-400 font-mono block">Active Routing: {networkPaths.dedicated.status === 'ACTIVE' ? 'Dedicated Primary Line' : 'VPN Tunnel Backup'}</span>
-                  </div>
-
-                  {/* 네트워크 모드 아이콘 */}
-                  <div className="h-16 w-16 bg-slate-950 border border-slate-700 rounded-full flex flex-col items-center justify-center shadow-inner relative overflow-hidden flex-shrink-0">
-                    <div className={`h-2 w-2 rounded-full absolute top-2 right-2 ${networkPaths.dedicated.status === 'ACTIVE' ? 'bg-[#1d8102] animate-ping' : 'bg-[#ec7211] animate-ping'}`} />
-                    <span className="text-[18px]">⚡</span>
-                    <span className="text-[8px] font-black text-slate-400 uppercase mt-0.5">{networkPaths.dedicated.status === 'ACTIVE' ? 'PRIMARY' : 'BYPASS'}</span>
-                  </div>
-                </div>
-
-                {/* 3. 보안 방어 쉴드 (방패 스캔 & 차단 카운터) */}
-                <div className="border border-slate-700/60 rounded-lg p-4 bg-slate-900/40 flex items-center justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <span className="text-[10px] font-extrabold text-slate-300 tracking-wider uppercase block">🛡️ SECURITY SHIELD STATE</span>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black text-slate-100">{blockedIps.length} IPs Blocked</span>
-                      <span className="text-[9px] text-[#0073bb] font-bold">SOAR Active</span>
-                    </div>
-                    
-                    {/* 차단 진행바 */}
-                    <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden relative">
-                      <div 
-                        className="bg-[#d13212] h-full rounded-full transition-all duration-500" 
-                        style={{ width: `${Math.min(100, (blockedIps.length * 20) || 5)}%` }} 
-                      />
-                    </div>
-                    <span className="text-[8px] text-slate-400 font-mono block truncate max-w-[200px]" title={blockedIps.join(', ') || 'No active blocks'}>
-                      Blacklist: {blockedIps.join(', ') || 'Clean zone (0 Threats)'}
+                {/* KPI Card 2: SLO Score (서비스 수준 지표) */}
+                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">SLO Score (Target: 99.9%)</span>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-950/40 text-[#10b981] border border-emerald-900/30">
+                      ▲ 0.02%
                     </span>
                   </div>
-
-                  {/* 보안 쉴드 구형체 데코 */}
-                  <div className="h-16 w-16 bg-slate-800 rounded-lg flex flex-col items-center justify-center shadow-md border border-slate-700 relative overflow-hidden flex-shrink-0">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,115,187,0.25)_0%,transparent_70%)] animate-pulse" />
-                    <span className="text-[20px] text-sky-400 z-10">🛡️</span>
-                    <span className="text-[8px] font-black text-sky-400 z-10 tracking-widest mt-0.5">ACTIVE</span>
+                  
+                  <div className="my-2.5 flex items-baseline gap-2">
+                    <span className="text-3xl font-bold tracking-tight text-[#10b981] font-sans num">99.95%</span>
+                    <span className="text-[10px] text-slate-500 font-mono">compliance</span>
                   </div>
+                  
+                  {/* 미니 Sparkline (SVG) */}
+                  <div className="h-[25px] w-full mt-1.5 opacity-60">
+                    <svg viewBox="0 0 100 20" className="w-full h-full" preserveAspectRatio="none">
+                      <path d="M 0 10 L 20 8 L 40 9 L 60 7 L 80 5 L 100 4" fill="none" stroke="#10b981" strokeWidth="1.8" />
+                    </svg>
+                  </div>
+                  <div className="text-[8.5px] text-slate-500 font-mono mt-1">30-day trailing window</div>
+                </div>
+
+                {/* KPI Card 3: Active Alarms (활성 경보 건수) */}
+                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">Active Alarms</span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black font-mono border ${
+                      incidents.filter((i: any) => i.status === 'OPEN').length > 0
+                        ? 'bg-red-950/40 text-[#ef4444] border-red-900/30'
+                        : 'bg-slate-900/50 text-slate-400 border-slate-800'
+                    }`}>
+                      {incidents.filter((i: any) => i.status === 'OPEN').length > 0 ? 'ALERT' : 'OK'}
+                    </span>
+                  </div>
+                  
+                  <div className="my-2.5 flex items-baseline gap-2">
+                    <span className={`text-3xl font-bold tracking-tight font-sans num ${
+                      incidents.filter((i: any) => i.status === 'OPEN').length > 0 ? 'text-[#ef4444]' : 'text-slate-100'
+                    }`}>
+                      {incidents.filter((i: any) => i.status === 'OPEN').length}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">unresolved</span>
+                  </div>
+                  
+                  {/* 미니 Sparkline (SVG) */}
+                  <div className="h-[25px] w-full mt-1.5 opacity-60">
+                    <svg viewBox="0 0 100 20" className="w-full h-full" preserveAspectRatio="none">
+                      <path d="M 0 18 L 30 18 L 60 18 L 80 5 L 100 5" fill="none" stroke={incidents.filter((i: any) => i.status === 'OPEN').length > 0 ? '#ef4444' : '#64748b'} strokeWidth="1.8" />
+                    </svg>
+                  </div>
+                  <div className="text-[8.5px] text-slate-500 font-mono mt-1">Real-time status queue</div>
+                </div>
+
+                {/* KPI Card 4: Monthly Cost (당월 누적 비용) */}
+                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">Monthly Total Cost</span>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-sky-950/40 text-sky-400 border border-sky-900/30">
+                      OPTIMIZED
+                    </span>
+                  </div>
+                  
+                  <div className="my-2.5 flex items-baseline gap-2">
+                    <span className="text-2xl font-bold tracking-tight text-slate-100 font-sans num">
+                      ₩{parseFloat(costs?.monthly_total || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-mono">KRW</span>
+                  </div>
+                  
+                  {/* 미니 Sparkline (SVG) */}
+                  <div className="h-[25px] w-full mt-1.5 opacity-60">
+                    <svg viewBox="0 0 100 20" className="w-full h-full" preserveAspectRatio="none">
+                      <path d="M 0 15 L 20 13 L 40 12 L 60 11 L 80 10 L 100 8" fill="none" stroke="#38bdf8" strokeWidth="1.8" />
+                    </svg>
+                  </div>
+                  <div className="text-[8.5px] text-slate-500 font-mono mt-1">Direct SCP Billing OpenAPI</div>
                 </div>
 
               </div>
@@ -2276,8 +2239,22 @@ export default function Home() {
                         ) : (
                           /* ⏱️ RCA Timeline Card Stream 렌더링 */
                           <div className="space-y-4">
-                            {timelineCards.length === 0 ? (
-                              <div className="p-6 text-center text-slate-500 font-mono text-[10px]">[INFO] Timeline loading...</div>
+                            {isRcaLoading ? (
+                              /* 🌀 가이드라인 충족: 레이아웃 치수와 1:1 매칭되는 스켈레톤 로더 */
+                              <div className="space-y-3.5 animate-pulse pl-5 border-l border-slate-900">
+                                {[1, 2, 3].map((n) => (
+                                  <div key={n} className="p-3 bg-[#0d121f] border border-slate-800/80 rounded space-y-2">
+                                    <div className="flex justify-between">
+                                      <div className="h-3 w-1/3 bg-slate-800 rounded" />
+                                      <div className="h-2 w-12 bg-slate-800 rounded" />
+                                    </div>
+                                    <div className="h-2.5 w-full bg-slate-800/60 rounded" />
+                                    <div className="h-2 w-2/3 bg-slate-800/40 rounded" />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : timelineCards.length === 0 ? (
+                              <div className="p-6 text-center text-slate-500 font-mono text-[10px]">[INFO] No timeline details registered. Try running AI RCA.</div>
                             ) : (
                               <div className="relative pl-5 border-l border-slate-800 space-y-4">
                                 {timelineCards.map((card, idx) => {
@@ -2416,7 +2393,7 @@ export default function Home() {
           {activeMenu === 'metrics' && (
             <div className="space-y-8">
               <div>
-                <h2 className="text-2xl font-bold text-slate-100 tracking-tight">CloudWatch Metrics</h2>
+                <h2 className="text-2xl font-bold text-slate-100 tracking-tight">SCP Cloud Monitoring Metrics</h2>
                 <p className="text-xs text-slate-400 mt-1">인프라 인스턴스들의 리소스 임계 성능을 분석 그래프로 표시합니다.</p>
               </div>
               
@@ -2466,22 +2443,22 @@ export default function Home() {
                     <svg width="100%" height="240" viewBox="0 0 800 240" preserveAspectRatio="none">
                       <defs>
                         <linearGradient id="cloudwatchGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
+                          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.08" />
                           <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.0" />
                         </linearGradient>
                       </defs>
 
                       {/* 가로 그리드 */}
-                      <line x1="50" y1="20" x2="780" y2="20" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                      <line x1="50" y1="70" x2="780" y2="70" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                      <line x1="50" y1="120" x2="780" y2="120" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                      <line x1="50" y1="170" x2="780" y2="170" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+                      <line x1="50" y1="20" x2="780" y2="20" stroke="rgba(255, 255, 255, 0.025)" strokeWidth="1" />
+                      <line x1="50" y1="70" x2="780" y2="70" stroke="rgba(255, 255, 255, 0.025)" strokeWidth="1" />
+                      <line x1="50" y1="120" x2="780" y2="120" stroke="rgba(255, 255, 255, 0.025)" strokeWidth="1" />
+                      <line x1="50" y1="170" x2="780" y2="170" stroke="rgba(255, 255, 255, 0.025)" strokeWidth="1" />
                       <line x1="50" y1="220" x2="780" y2="220" stroke="#334155" strokeWidth="1.5" />
 
                       {/* Y축 라벨 */}
-                      <text x="15" y="24" fill="#94a3b8" fontSize="9" fontWeight="bold">100%</text>
-                      <text x="15" y="124" fill="#94a3b8" fontSize="9" fontWeight="bold">50%</text>
-                      <text x="15" y="224" fill="#94a3b8" fontSize="9" fontWeight="bold">0%</text>
+                      <text x="12" y="24" fill="#64748b" className="num text-[10px] font-bold">100%</text>
+                      <text x="12" y="124" fill="#64748b" className="num text-[10px] font-bold">50%</text>
+                      <text x="12" y="224" fill="#64748b" className="num text-[10px] font-bold">0%</text>
 
                       {(() => {
                         const width = 730;
