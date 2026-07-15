@@ -768,7 +768,7 @@ function ForceTopology({ topology, selectedNode, onSelectNode, activeCsp }: { to
   }, [selectedNode]);
 
   return (
-    <div className="relative border border-[#334155] bg-[#1e293b] rounded shadow-sm overflow-hidden select-none">
+    <div className="relative border border-slate-800/60 bg-[#0d121f] border border-slate-800/80 rounded  overflow-hidden select-none">
       {/* 인터랙티브 마우스 가이드 뱃지 */}
       <div className="absolute top-3 left-3 bg-[#19222d] text-white text-[9px] uppercase px-2 py-1 rounded font-bold pointer-events-none z-10 opacity-80 tracking-wider">
         🖱️ Drag nodes to toss // Scroll to Zoom // Drag canvas to Pan
@@ -1255,7 +1255,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#eaeded] text-[#2c3e50] flex font-sans antialiased">
         {/* 좌측: 안내 영역 */}
-        <div className="w-7/12 bg-[#232f3e] p-20 flex flex-col justify-between text-white relative">
+        <div className="w-7/12 bg-[#232f3e] p-16 flex flex-col justify-between text-white relative">
           <div>
             <div className="flex items-center gap-3.5 mb-14">
               <span className="text-[#ff9900] text-3xl font-extrabold">aws</span>
@@ -1298,9 +1298,9 @@ export default function Home() {
         </div>
 
         {/* 우측: 로그인 폼 */}
-        <div className="w-5/12 p-20 flex flex-col justify-center bg-white shadow-2xl">
+        <div className="w-5/12 p-16 flex flex-col justify-center bg-white ">
           <div className="max-w-md mx-auto w-full">
-            <div className="border border-[#eaeded] rounded p-8 bg-white shadow-sm">
+            <div className="border border-[#eaeded] rounded p-8 bg-white ">
               <h3 className="text-2xl font-semibold text-[#1a202c] mb-6">콘솔에 로그인</h3>
               
               {loginError && (
@@ -1331,7 +1331,7 @@ export default function Home() {
                 
                 <button
                   type="submit"
-                  className="w-full bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold py-2 rounded transition-all duration-150 text-sm shadow-sm cursor-pointer"
+                  className="w-full bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold py-2 rounded transition-all duration-150 text-sm  cursor-pointer"
                 >
                   로그인
                 </button>
@@ -1405,7 +1405,7 @@ export default function Home() {
       <div className="flex-1 flex min-h-0">
         
         {/* 좌측 서비스 목록 */}
-        <aside className="w-64 bg-[#0b0f19] border-r border-[#1e293b] p-5 flex flex-col justify-between z-10">
+        <aside className="w-64 bg-[#060913] border-r border-[#1e293b] p-4 flex flex-col justify-between z-10">
           <div>
             <div className="text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-2 px-3">
               AIOps Services
@@ -1413,16 +1413,16 @@ export default function Home() {
 
             {/* CSP 모드 선택 스위치 */}
             <div className="px-3 mb-5">
-              <div className="flex gap-1 bg-[#1e293b] p-1 rounded border border-[#334155]">
+              <div className="flex gap-1 bg-[#0d121f] border border-slate-800/80 p-1 rounded border border-slate-800/60">
                 <button
                   onClick={() => { setActiveCsp('scp'); loadData('scp'); }}
-                  className={`flex-1 text-center py-1 rounded text-[10px] font-extrabold transition-all cursor-pointer ${activeCsp === 'scp' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-100'}`}
+                  className={`flex-1 text-center py-1 rounded text-[10px] font-extrabold transition-all cursor-pointer ${activeCsp === 'scp' ? 'bg-slate-700 text-white ' : 'text-slate-400 hover:text-slate-100'}`}
                 >
                   Samsung SCP
                 </button>
                 <button
                   onClick={() => { setActiveCsp('aws'); loadData('aws'); }}
-                  className={`flex-1 text-center py-1 rounded text-[10px] font-extrabold transition-all cursor-pointer ${activeCsp === 'aws' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-100'}`}
+                  className={`flex-1 text-center py-1 rounded text-[10px] font-extrabold transition-all cursor-pointer ${activeCsp === 'aws' ? 'bg-slate-700 text-white ' : 'text-slate-400 hover:text-slate-100'}`}
                 >
                   AWS Cloud
                 </button>
@@ -1451,7 +1451,7 @@ export default function Home() {
             </nav>
           </div>
 
-          <div className="bg-[#1e293b] border border-[#334155] p-4 rounded text-xs space-y-3">
+          <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-4 rounded text-xs space-y-3">
             {/* Ed25519 라이선스 상태 감지 카드 */}
             <div>
               <div className="font-bold text-slate-300 mb-1.5 uppercase text-[9px] tracking-wider">Ed25519 License Shield</div>
@@ -1486,7 +1486,7 @@ export default function Home() {
             <div className="space-y-6">
               
               {/* 대시보드 헤더 */}
-              <div className="flex justify-between items-center bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+              <div className="flex justify-between items-center bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                 <div>
                   <h2 className="text-xl font-bold text-slate-100 tracking-tight">ddalkkak AIOps 통합 관제 콘솔 ({activeCsp === 'scp' ? 'Samsung SCP' : 'AWS Cloud'})</h2>
                   <p className="text-[11px] text-slate-400 mt-0.5">실시간 이상 감지, 인프라 용량 포화 예측 및 네트워크/보안 자율 제어 통제 센터입니다.</p>
@@ -1494,7 +1494,7 @@ export default function Home() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => { setActiveMenu('costs'); handleGenerateMonthlyReport(); }}
-                    className="bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold px-4 py-2 rounded text-xs transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                    className="bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold px-4 py-2 rounded text-xs transition-all  cursor-pointer flex items-center gap-1.5"
                   >
                     📋 AI 월간 보고서 초안 작성
                   </button>
@@ -1516,7 +1516,7 @@ export default function Home() {
                   <span className="text-[9px] text-slate-400 italic">단계 버튼을 클릭하면 해당 레벨의 자율 조치 지표와 플레이북이 활성화됩니다.</span>
                 </div>
                 
-                <div className="grid grid-cols-4 gap-4 bg-[#1e293b] border border-[#334155] p-3 rounded shadow-sm">
+                <div className="grid grid-cols-4 gap-4 bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-3 rounded ">
                   {[
                     { level: 1, label: '1단계: Observe (통합 관측)', icon: '👁️', desc: 'Flow Log, 메트릭, 로그 통합 가시화', type: 'cyan' },
                     { level: 2, label: '2단계: Detect/RCA (지능 탐지)', icon: '🔍', desc: 'AI 임계치 이상탐지 및 근본원인 분석', type: 'cyan' },
@@ -1528,8 +1528,8 @@ export default function Home() {
                       onClick={() => setMaturityLevel(item.level)}
                       className={`text-left p-3.5 rounded transition-all border cursor-pointer ${
                         maturityLevel === item.level 
-                          ? (item.type === 'cyan' ? 'bg-[#0f172a] neon-active-cyan font-bold shadow-md' : 'bg-[#0f172a] neon-active-orange font-bold shadow-md') 
-                          : 'neon-inactive hover:bg-[#1e293b] hover:text-slate-100'
+                          ? (item.type === 'cyan' ? 'bg-[#0f172a] neon-active-cyan font-bold ' : 'bg-[#0f172a] neon-active-orange font-bold ') 
+                          : 'neon-inactive hover:bg-[#0d121f] border border-slate-800/80 hover:text-slate-100'
                       }`}
                     >
                       <div className="text-xs font-extrabold flex items-center gap-2 mb-1">
@@ -1545,7 +1545,7 @@ export default function Home() {
               <div className="grid grid-cols-4 gap-6">
                 
                 {/* KPI Card 1: System Health (종합 헬스 상태) */}
-                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                <div className="bg-[#060913] border border-slate-800/80 p-4 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
                   <div className="flex justify-between items-start">
                     <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">System Health</span>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black font-mono border ${
@@ -1576,7 +1576,7 @@ export default function Home() {
                 </div>
 
                 {/* KPI Card 2: SLO Score (서비스 수준 지표) */}
-                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                <div className="bg-[#060913] border border-slate-800/80 p-4 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
                   <div className="flex justify-between items-start">
                     <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">SLO Score (Target: 99.9%)</span>
                     <span className="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-emerald-950/40 text-[#10b981] border border-emerald-900/30">
@@ -1599,7 +1599,7 @@ export default function Home() {
                 </div>
 
                 {/* KPI Card 3: Active Alarms (활성 경보 건수) */}
-                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                <div className="bg-[#060913] border border-slate-800/80 p-4 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
                   <div className="flex justify-between items-start">
                     <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">Active Alarms</span>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black font-mono border ${
@@ -1630,7 +1630,7 @@ export default function Home() {
                 </div>
 
                 {/* KPI Card 4: Monthly Cost (당월 누적 비용) */}
-                <div className="bg-[#0b0f19] border border-slate-800/80 p-5 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
+                <div className="bg-[#060913] border border-slate-800/80 p-4 rounded-lg flex flex-col justify-between relative overflow-hidden h-[135px]">
                   <div className="flex justify-between items-start">
                     <span className="text-[10.5px] text-slate-400 font-extrabold tracking-wider uppercase font-sans">Monthly Total Cost</span>
                     <span className="px-2 py-0.5 rounded text-[9px] font-black font-mono bg-sky-950/40 text-sky-400 border border-sky-900/30">
@@ -1662,8 +1662,8 @@ export default function Home() {
                 {/* 좌측 5열: 실시간 토폴로지 관계도 & 서버 정보 리스트 */}
                 <div className="col-span-5 space-y-6">
                   {/* 토폴로지 캔버스 카드 */}
-                  <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm p-5 space-y-3">
-                    <div className="flex justify-between items-center pb-2.5 border-b border-[#334155]">
+                  <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded  p-4 space-y-3">
+                    <div className="flex justify-between items-center pb-2.5 border-b border-slate-800/60">
                       <div className="flex items-center gap-4">
                         <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                           <span>🌐</span> 인프라 자원 토폴로지 관제
@@ -1712,13 +1712,13 @@ export default function Home() {
                   </div>
 
                   {/* 리소스 요약 테이블 */}
-                  <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm">
-                    <div className="px-5 py-3 border-b border-[#334155] bg-slate-900/60">
+                  <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded ">
+                    <div className="px-5 py-3 border-b border-slate-800/60 bg-slate-900/60">
                       <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">가동 장비 리소스 대장</h3>
                     </div>
                     <div className="overflow-x-auto max-h-[220px] overflow-y-auto">
                       <table className="w-full text-left text-xs font-mono">
-                        <thead className="bg-slate-900/40 border-b border-[#334155] text-slate-400 font-bold uppercase text-[9px]">
+                        <thead className="bg-slate-900/40 border-b border-slate-800/60 text-slate-400 font-bold uppercase text-[9px]">
                           <tr>
                             <th className="p-2.5 pl-5">ID</th>
                             <th className="p-2.5">Name</th>
@@ -1749,8 +1749,8 @@ export default function Home() {
                 <div className="col-span-5 space-y-6">
                   
                   {/* AIOps Autopilot Live Action Log (AI 자율 운영 자가복구 이력) */}
-                  <div className="bg-[#1e293b] border border-[#334155] rounded shadow-lg p-5 space-y-3">
-                    <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
+                  <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded  p-4 space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-800/60">
                       <h3 className="text-xs font-extrabold text-[#f8fafc] uppercase tracking-wider flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
                         <span>🤖 AIOps Autopilot Live Action Log</span>
@@ -1804,8 +1804,8 @@ export default function Home() {
 
                   {/* Level 3: 용량 예측 패널 (Predict) - 임계 및 안전 구분 분기 */}
                   {maturityLevel >= 3 && diskPrediction && (
-                    <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm p-5 space-y-3">
-                      <div className="border-b border-[#334155] pb-2 flex justify-between items-center">
+                    <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded  p-4 space-y-3">
+                      <div className="border-b border-slate-800/60 pb-2 flex justify-between items-center">
                         <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider">🔮 AIOps 디스크 포화 선행 예측</h3>
                         {diskPrediction.saturates_soon ? (
                           <span className="bg-[#d13212]/10 text-[#d13212] px-2 py-0.5 rounded text-[9px] font-bold animate-pulse">
@@ -1855,8 +1855,8 @@ export default function Home() {
 
                   {/* Level 4: 네트워크 이중화 회선 우회 - SCP 프리미엄 리디자인 (실서버 시 비활성 가이드 전환) */}
                   {maturityLevel >= 4 && (
-                    <div className="bg-[#1e293b] border border-slate-700/80 rounded shadow-lg p-5 space-y-4">
-                      <div className="border-b border-[#334155] pb-2 flex justify-between items-center">
+                    <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-700/80 rounded  p-4 space-y-4">
+                      <div className="border-b border-slate-800/60 pb-2 flex justify-between items-center">
                         <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider">🤖 이중화 네트워크 자율 우회 제어</h3>
                         <span className="px-2 py-0.5 rounded text-[8px] font-bold uppercase bg-slate-800 text-slate-400">
                           UNCONFIGURED
@@ -1969,8 +1969,8 @@ export default function Home() {
 
                   {/* Level 4: SecOps SOAR 침입 IP 차단 대장 */}
                   {maturityLevel >= 4 && (
-                    <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm p-5 space-y-3">
-                      <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider border-b border-[#334155] pb-2">
+                    <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded  p-4 space-y-3">
+                      <h3 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider border-b border-slate-800/60 pb-2">
                         🛡️ AI SecOps SOAR 침입 IP 차단
                       </h3>
                       
@@ -2028,11 +2028,11 @@ export default function Home() {
                   )}
 
                   {/* 알림 위젯 목록 */}
-                  <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm">
-                    <div className="px-5 py-3 border-b border-[#334155] bg-slate-900/60 flex justify-between items-center">
+                  <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded ">
+                    <div className="px-5 py-3 border-b border-slate-800/60 bg-slate-900/60 flex justify-between items-center">
                       <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">🚨 SCP Cloud Monitoring Alarm History</h3>
                     </div>
-                    <div className="p-5 space-y-3">
+                    <div className="p-4 space-y-3">
                       {incidents.filter(i => i.status === 'OPEN').length === 0 ? (
                         <div className="p-3 text-center text-[10px] text-slate-500 font-mono">
                           [INFO] // No active alarms.
@@ -2081,14 +2081,14 @@ export default function Home() {
 
               <div className="grid grid-cols-3 gap-8">
                 {/* 장애 목록 테이블 (좌측 2열 크기) */}
-                <div className="col-span-2 bg-[#1e293b] border border-[#334155] rounded shadow-sm">
-                  <div className="px-6 py-4 border-b border-[#334155] bg-slate-900/60">
+                <div className="col-span-2 bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded ">
+                  <div className="px-6 py-4 border-b border-slate-800/60 bg-slate-900/60">
                     <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Active Incident Queue</h3>
                   </div>
                   <div className="overflow-y-auto max-h-[500px]">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-[#334155] bg-slate-900/40 text-slate-400 uppercase font-semibold">
+                        <tr className="border-b border-slate-800/60 bg-slate-900/40 text-slate-400 uppercase font-semibold">
                           <th className="py-3 px-4">Severity</th>
                           <th className="py-3 px-4">Incident Title</th>
                           <th className="py-3 px-4">State</th>
@@ -2136,7 +2136,7 @@ export default function Home() {
                 {/* 장애 상세 추적 및 AI 어시스턴트 (우측 1열 크기) */}
                 <div className="space-y-6">
                   {incidentDetail ? (
-                    <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm space-y-6">
+                    <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded  space-y-6">
                       <div>
                         <span className="text-[10px] text-slate-400 font-mono">Incident # {incidentDetail.incident.id}</span>
                         <h3 className="font-bold text-base text-slate-100 mt-1">{incidentDetail.incident.title}</h3>
@@ -2189,7 +2189,7 @@ export default function Home() {
                           <div className="space-y-3">
                             <button
                               onClick={() => handleRunAiRca(incidentDetail.incident.id)}
-                              className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded text-xs cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                              className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold py-2 rounded text-xs cursor-pointer  flex items-center justify-center gap-1.5"
                               disabled={isRcaLoading}
                             >
                               {isRcaLoading ? 'AI 분석 중...' : '🔮 AI 원인 분석 실행 (RCA)'}
@@ -2319,7 +2319,7 @@ export default function Home() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-6 bg-white border border-[#eaeded] rounded text-center text-xs text-gray-400 font-mono shadow-sm">
+                    <div className="p-6 bg-white border border-[#eaeded] rounded text-center text-xs text-gray-400 font-mono ">
                       [Select an incident from the queue to view details & run AI RCA diagnostics]
                     </div>
                   )}
@@ -2354,14 +2354,14 @@ export default function Home() {
               )}
 
               {/* 자산 목록 */}
-              <div className="bg-[#1e293b] border border-[#334155] rounded shadow-sm">
-                <div className="px-6 py-4 border-b border-[#334155] bg-slate-900/60">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 rounded ">
+                <div className="px-6 py-4 border-b border-slate-800/60 bg-slate-900/60">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">리소스 테이블 리스트</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-[#334155] bg-slate-900/40 text-slate-400 uppercase font-semibold">
+                      <tr className="border-b border-slate-800/60 bg-slate-900/40 text-slate-400 uppercase font-semibold">
                         <th className="py-3 px-6">Instance ID</th>
                         <th className="py-3 px-6">Instance Name</th>
                         <th className="py-3 px-6">Type</th>
@@ -2397,7 +2397,7 @@ export default function Home() {
                 <p className="text-xs text-slate-400 mt-1">인프라 인스턴스들의 리소스 임계 성능을 분석 그래프로 표시합니다.</p>
               </div>
               
-              <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                 <div className="grid grid-cols-3 gap-6 mb-6">
                   <div>
                     <label className="block text-xs font-bold text-slate-200 uppercase mb-2">Instance Node</label>
@@ -2505,7 +2505,7 @@ export default function Home() {
           {/* E. 로그 및 알람 화면 */}
           {activeMenu === 'logs' && (
             <div className="grid grid-cols-2 gap-8">
-              <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">📰 CloudWatch Logs Stream</h3>
                 <div className="space-y-2 h-[450px] overflow-y-auto pr-2 font-mono text-[11px] leading-relaxed">
                   {logs.map((log: any, idx: number) => {
@@ -2523,7 +2523,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">🚨 Alarm Severity Log</h3>
                 <div className="space-y-4">
                   {events.map((ev: any) => (
@@ -2552,7 +2552,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={handleGenerateMonthlyReport}
-                  className="bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold px-4 py-2 rounded text-xs transition-all shadow-sm cursor-pointer"
+                  className="bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold px-4 py-2 rounded text-xs transition-all  cursor-pointer"
                   disabled={isReportLoading}
                 >
                   {isReportLoading ? '보고서 작성 중...' : '📋 월간 운영 보고서 AI 초안 작성'}
@@ -2582,7 +2582,7 @@ export default function Home() {
 
               {/* 월간 운영 보고서 마크다운 팝업 */}
               {monthlyReport && (
-                <div className="bg-slate-900 border border-slate-700 p-6 rounded shadow-inner space-y-4">
+                <div className="bg-slate-900 border border-slate-700 p-6 rounded  space-y-4">
                   <div className="flex justify-between items-center border-b border-slate-700 pb-2">
                     <h3 className="text-xs font-bold text-slate-200 uppercase tracking-widest">📋 AI Generated Monthly Executive Report Draft</h3>
                     <button 
@@ -2599,11 +2599,11 @@ export default function Home() {
               )}
 
               <div className="grid grid-cols-2 gap-6">
-                <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                   <h4 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Unblended Cost (M-T-D)</h4>
                   <p className="text-3xl font-extrabold text-slate-100">${parseFloat(costs?.monthly_total || 0).toFixed(2)}</p>
                 </div>
-                <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                   <h4 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Daily Cost Average</h4>
                   <p className="text-3xl font-extrabold text-slate-100">${parseFloat(costs?.daily_average || 0).toFixed(2)}</p>
                 </div>
@@ -2611,7 +2611,7 @@ export default function Home() {
 
               {/* 비용 바 차트 */}
               {costs?.daily_trends && (
-                <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-6">📅 Daily Billing Costs (AP-NORTHEAST-2)</h3>
                   <div className="border border-slate-700 p-6 rounded bg-slate-950">
                     <svg width="100%" height="150" viewBox="0 0 700 150" preserveAspectRatio="none">
@@ -2639,7 +2639,7 @@ export default function Home() {
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">💡 AWS Trusted Advisor Rightsizing Recommendations</h3>
                 <div className="grid grid-cols-2 gap-6">
                   {costs?.recommendations?.map((rec: any, idx: number) => (
-                    <div key={idx} className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                    <div key={idx} className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-[#ec7211]" />
@@ -2665,7 +2665,7 @@ export default function Home() {
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">📊 Real-time Performance-based Rightsizing recommendations</h3>
                 {rightsizingRecommendations.length === 0 ? (
                   /* 최적화 비활성 안전 가이드 카드 노출 */
-                  <div className="p-8 bg-[#1e293b] border border-slate-700/60 rounded shadow-md text-center space-y-2">
+                  <div className="p-8 bg-[#0d121f] border border-slate-800/80 border border-slate-700/60 rounded  text-center space-y-2">
                     <span className="text-2xl block">✅</span>
                     <span className="text-[11px] font-bold text-emerald-400 block">비용 최적화 안정 상태</span>
                     <p className="text-[9.5px] text-slate-400 max-w-md mx-auto leading-normal">
@@ -2680,8 +2680,8 @@ export default function Home() {
                         <div
                           key={idx}
                           onClick={() => handleSimulateRightsizing(rec.node_id)}
-                          className={`bg-[#1e293b] p-6 rounded shadow-sm flex flex-col justify-between cursor-pointer transition-all border ${
-                            isSimulating ? 'border-sky-500 bg-slate-900/60' : 'border-[#334155] hover:border-slate-600'
+                          className={`bg-[#0d121f] border border-slate-800/80 p-6 rounded  flex flex-col justify-between cursor-pointer transition-all border ${
+                            isSimulating ? 'border-sky-500 bg-slate-900/60' : 'border-slate-800/60 hover:border-slate-600'
                           }`}
                         >
                           <div>
@@ -2721,7 +2721,7 @@ export default function Home() {
                                       const y = 90 - (pt.original_value * 0.8);
                                       return `L ${x} ${y}`;
                                     }).join(' ')} L 360 90 Z`}
-                                    fill="rgba(0, 115, 187, 0.15)"
+                                    fill="rgba(0, 115, 187, 0.06)"
                                     stroke="rgba(0, 115, 187, 0.7)"
                                     strokeWidth="1.2"
                                   />
@@ -2733,7 +2733,7 @@ export default function Home() {
                                       const y = 90 - (pt.simulated_value * 0.8);
                                       return `L ${x} ${y}`;
                                     }).join(' ')} L 360 90 Z`}
-                                    fill="rgba(236, 114, 17, 0.12)"
+                                    fill="rgba(236, 114, 17, 0.05)"
                                     stroke="rgba(236, 114, 17, 0.75)"
                                     strokeWidth="1.2"
                                     strokeDasharray="2,2"
@@ -2774,8 +2774,8 @@ export default function Home() {
               </div>
               
               {/* 클라우드 OpenAPI 계정 연동 설정 카드 */}
-              <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm space-y-4">
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider border-b border-[#334155] pb-2 flex items-center gap-1.5">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded  space-y-4">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider border-b border-slate-800/60 pb-2 flex items-center gap-1.5">
                   <span>🔗</span> Samsung Cloud Platform V2 OpenAPI 계정 연동 및 등록
                 </h3>
                 <p className="text-xs text-slate-400">Access Key, Secret Key, Project ID를 입력하고 연동 테스트를 통과하면 보안 DEK 키로 봉투 암호화되어 DB에 자동 저장 및 토폴로지가 갱신됩니다.</p>
@@ -2898,7 +2898,7 @@ export default function Home() {
               
               <div className="grid grid-cols-3 gap-8">
                 {/* 룰 추가 폼 */}
-                <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-6">🚨 Create Config Rule</h3>
                   <form onSubmit={handleAddRule} className="space-y-4">
                     <div>
@@ -2954,7 +2954,7 @@ export default function Home() {
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold p-2.5 rounded text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-sm"
+                      className="w-full bg-[#ec7211] hover:bg-[#d85d00] text-white font-bold p-2.5 rounded text-xs uppercase tracking-wider transition-colors cursor-pointer "
                       disabled={['TENANT_VIEWER'].includes(userRole) || license.is_expired || !license.is_valid}
                     >
                       Deploy Rule
@@ -2963,12 +2963,12 @@ export default function Home() {
                 </div>
 
                 {/* 룰 목록 테이블 */}
-                <div className="col-span-2 bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+                <div className="col-span-2 bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                   <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-6">📋 Config Rules Inventory</h3>
                   <div className="overflow-y-auto max-h-[350px]">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-[#334155] text-slate-400 bg-slate-900/60 uppercase tracking-wider">
+                        <tr className="border-b border-slate-800/60 text-slate-400 bg-slate-900/60 uppercase tracking-wider">
                           <th className="py-2.5 px-4 font-semibold">Rule Name</th>
                           <th className="py-2.5 px-4 font-semibold">Expression</th>
                           <th className="py-2.5 px-4 font-semibold">Duration</th>
@@ -3001,7 +3001,7 @@ export default function Home() {
               </div>
 
               {/* CloudTrail 감사로그 */}
-              <div className="bg-[#1e293b] border border-[#334155] p-6 rounded shadow-sm">
+              <div className="bg-[#0d121f] border border-slate-800/80 border border-slate-800/60 p-6 rounded ">
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-6">🛡️ CloudTrail Security Event History</h3>
                 <div className="space-y-2 h-[250px] overflow-y-auto font-mono text-[11px] pr-2 leading-relaxed text-slate-300">
                   {auditLogs.map((log: any) => {

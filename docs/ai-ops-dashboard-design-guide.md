@@ -1,7 +1,64 @@
 # AI Ops Dashboard — UI/UX Design Reference & Implementation Guide
 
-**Audience:** an AI coding agent (Claude Code / Codex / Cursor) tasked with redesigning or building an AI Ops dashboard.
+**Audience:** an AI coding agent (Claude Code / Codex / Cursor / Gemini) tasked with redesigning or building an AI Ops dashboard.
 **Status:** design brief + implementation spec. Read fully before writing code.
+
+---
+
+## ⚠️ READ THIS FIRST — mandatory directives
+
+**1. This is a REFACTOR of existing code, not a greenfield build.** Your job is to find what is wrong in the current UI and change it. Producing new files is not the goal; changing the existing screens is.
+
+**2. Swapping the font and stopping is a FAILURE.** The font is item #1 of ~40. It is the single easiest change and the most common way a weaker agent "completes" this task while changing nothing else. If your diff touches only typography, you have not done the task. You must work through the audit in §0.1 and fix every category.
+
+**3. You almost certainly CANNOT open the reference URLs in §9–§10, and that is fine.** They are for the human, and for you *only if* you have browsing or repo-clone access. **Every rule you need to apply is written inline in this document as concrete values and code.** Never skip a rule because you can't reach the site that inspired it — the rule itself is right here. "Study Langfuse" is shorthand for the span-waterfall spec in §7.2, which is fully specified below.
+
+**4. Method is audit → diff, not "apply vibes."** For every violation you find, output: `file:line → what's wrong → the fix`. Then make the change. Do not summarize principles back to the human; produce edits.
+
+**5. Report with evidence.** When you finish, fill in the §11 checklist with `file:line` proof for each box — not bare checkmarks. Any box you cannot check, state why.
+
+---
+
+## 0.1. Audit — run these first to find violations mechanically
+
+You do not need to browse anything to find the problems. Grep the codebase. Each pattern below locates a class of violation; the linked section says how to fix it. Run them, paste the hits, fix each hit.
+
+```bash
+# Raw hex colors that should be tokens (§4.3)
+rg -n '#[0-9a-fA-F]{3,8}\b' src/ --type css --type ts --type tsx
+
+# Count DISTINCT colors actually used — should be tiny (§4.3 budget)
+rg -oiN '#[0-9a-fA-F]{6}' src/ | sort -u | wc -l   # >~15 unique = too many
+
+# Box-shadow used for elevation — wrong in dark mode, use border+bg lift (§4.4)
+rg -n 'box-?[Ss]hadow|shadow-(sm|md|lg|xl)' src/
+
+# Charts rendering a dot on every point — must be dot={false} (§6.1)
+rg -n '<Line|<Area' src/ -A6 | rg -n 'dot=' ; echo '^ any dot not ={false} is a violation'
+
+# Legends that should be direct labels when ≤2 series (§6.1)
+rg -n '<Legend' src/
+
+# Chart animation left on — distracting on refreshing data (§6.1)
+rg -n 'isAnimationActive' src/    # absent or ={true} on ops charts = violation
+
+# Pie/Donut — check segment count ≤4 or replace with bar list (§6.3)
+rg -n '<Pie|PieChart|DonutChart' src/
+
+# Dual axis — almost always misleading (§6.3)
+rg -n 'yAxisId|orientation="right"' src/
+
+# Arbitrary spacing not on the 4px scale (§4.2)
+rg -n 'padding|margin|gap' src/ --type css | rg -nP '\b(1[013579]|2[13579]|[3-9]?[13579])px'
+
+# Numbers without tabular-nums — they jitter on refresh (§4.1)
+rg -n 'tabular-nums|variant-numeric|tnum' src/    # near-zero hits = you haven't applied it
+
+# Missing states — grep for loading/empty/error handling (§8)
+rg -n 'isLoading|isPending|isError|empty|Skeleton|NoData' src/
+```
+
+If a grep returns nothing where it should return something (e.g. zero `tabular-nums` hits, zero `Skeleton` hits), that absence **is** the finding.
 
 ---
 
@@ -404,7 +461,7 @@ The fastest way a good-looking dashboard becomes cheap-looking is the moment the
 
 | Product | What to steal |
 |---|---|
-| **Langfuse** (MIT, self-hostable) | The de-facto standard for trace tree / span waterfall / session views. Hierarchical traces designed for multi-step agent reasoning. **Start here.** Clone it, run it, read the components. |
+| **Langfuse** (MIT, self-hostable) | The de-facto standard for trace tree / span waterfall / session views. Hierarchical traces designed for multi-step agent reasoning. **Start here** if you can clone/run it. **If you can't browse: the span-waterfall it's famous for is fully specified inline in §7.2 — build from that.** |
 | **Arize Phoenix** (open source) | OpenTelemetry-based trace views, eval visualization |
 | **Helicone** (open source) | Cost & latency dashboard, gateway metrics card layout |
 
@@ -431,30 +488,48 @@ The fastest way a good-looking dashboard becomes cheap-looking is the moment the
 
 ## 10. Reference links
 
+> **Note for the coding agent:** these are for the human, and for you only if you have browsing / clone access. If you cannot open them, do not treat any rule as skippable — the applicable rule is already inline above. The URL is the source, not the requirement.
+
 ### Code you can copy directly
-- **Tremor** — `tremor.so` · `blocks.tremor.so` — dashboard/chart components + 300 blocks, MIT
-- **shadcn/ui** — `ui.shadcn.com/charts` · `ui.shadcn.com/blocks`
-- **Vercel Geist** — `vercel.com/geist` — design tokens
-- **Radix Colors** — `radix-ui.com/colors` — the color system
-- **Pretendard** — Korean webfont
+- **Tremor** — https://tremor.so · https://blocks.tremor.so — dashboard/chart components + 300 blocks, MIT
+- **Tremor GitHub** — https://github.com/tremorlabs/tremor
+- **shadcn/ui charts** — https://ui.shadcn.com/charts
+- **shadcn/ui blocks** — https://ui.shadcn.com/blocks
+- **Vercel Geist (design tokens)** — https://vercel.com/geist/introduction
+- **Radix Colors (the color system)** — https://www.radix-ui.com/colors
+- **Pretendard (Korean webfont)** — https://github.com/orioncactus/pretendard
+- **Recharts** — https://recharts.org
+- **visx (custom viz / waterfalls)** — https://airbnb.io/visx
+- **uPlot (real-time)** — https://github.com/leeoniya/uPlot
 
 ### Design rules (read, don't just skim)
-- **Refactoring UI** — `refactoringui.com` — **if you read only one thing, read this.** It diagnoses exactly why developer-built UI looks wrong.
-- **Grafana dashboard best practices** — `grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/` — color semantics, stacking, axis normalization, dashboard sprawl
-- **IBM Carbon Data Visualization** — `carbondesignsystem.com/data-visualization` — which chart, which colors, how many
-- **Google SRE Book** — Four Golden Signals
+- **Refactoring UI** — https://www.refactoringui.com — **if you read only one thing, read this.** It diagnoses exactly why developer-built UI looks wrong.
+- **Grafana dashboard best practices** — https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/ — color semantics, stacking, axis normalization, dashboard sprawl
+- **IBM Carbon Data Visualization** — https://carbondesignsystem.com/data-visualization/getting-started/ — which chart, which colors, how many
+- **Google SRE Book — Monitoring / Golden Signals** — https://sre.google/sre-book/monitoring-distributed-systems/
+
+### Reference products (study if reachable — see §9 for what to take from each)
+- **Langfuse** — https://langfuse.com · https://github.com/langfuse/langfuse (self-host + read the components)
+- **Arize Phoenix** — https://github.com/Arize-ai/phoenix
+- **Helicone** — https://github.com/Helicone/helicone
+- **Braintrust** — https://www.braintrust.dev
+- **LangSmith** — https://www.langchain.com/langsmith
+- **Datadog LLM Observability** — https://www.datadoghq.com/product/llm-observability/
+- **Grafana** — https://grafana.com · **Perses** — https://perses.dev
+- **Linear (craft benchmark)** — https://linear.app
 
 ### Galleries
-- **Mobbin** (`mobbin.com`) — hundreds of thousands of real production screenshots, searchable by pattern. Paid, worth it.
-- **SaaSFrame** / **SaaSUI** (`saasui.design`) — organized by *screen type*: dashboards, onboarding, settings, **empty states**. Covers exactly the gap Mobbin leaves.
-- **Refero** (`refero.design`) — web-first, ~4,000 screens free, Figma plugin.
+- **Mobbin** — https://mobbin.com — hundreds of thousands of real production screenshots, searchable by pattern. Paid, worth it.
+- **SaaSFrame** — https://www.saasframe.io/categories/dashboard — organized by *screen type*: dashboards, onboarding, settings, **empty states**. Covers exactly the gap Mobbin leaves.
+- **SaaSUI** — https://www.saasui.design
+- **Refero** — https://refero.design — web-first, ~4,000 screens free, Figma plugin.
 - ⚠️ **Avoid Dribbble.** It is overwhelmingly unshipped concept work — visually polished but structurally unbuildable. Copying it produces a UI that collapses the moment real data (long labels, missing values, extreme outliers, 500 rows) arrives.
 
 ---
 
 ## 11. Acceptance checklist
 
-Do not report the task complete until every box is checked.
+Do not report the task complete until every box is checked **with `file:line` evidence** — write the proof next to each box (e.g. `[x] tabular-nums → globals.css:42, KpiCard.tsx:18`). A bare checkmark with no location is not acceptable. For any box you cannot check, state why in one line. If your final diff touches only fonts/colors and none of the layout, chart, or state sections, the task is **not** done (see directive #2).
 
 **Typography**
 - [ ] Pretendard (or equivalent) loaded; no OS default font fallback in production
