@@ -6,6 +6,11 @@
 *.key
 credentials*.json
 
+# 로컬 DB — 고객 자격증명 암호문이 포함될 수 있어 절대 커밋 금지 (회사 보안 룰)
+*.db
+*.sqlite
+*.sqlite3
+
 # Python
 __pycache__/
 *.pyc
@@ -31,3 +36,7 @@ Thumbs.db
 # 로컬 전용
 *.local
 .claude/settings.local.json
+
+# DB 백업(고객사 암호화 자격증명 포함) — 절대 커밋 금지
+*.db.bak-*
+*.db.backup
