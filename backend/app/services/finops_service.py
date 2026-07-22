@@ -1,6 +1,12 @@
 from typing import List, Dict, Any
 from loguru import logger
 
+# 월간 인스턴스 요금(KRW) - 본 플랫폼은 원화(KRW)만 취급한다(USD 매그니튜드 하드코딩 금지).
+# demo/costs.py::UNIT_MONTHLY_KRW의 vm 단가(SCP Standard-4 ≈ ₩178,200,
+# AWS t3.medium ≈ ₩87,750)와 동일한 스케일로 맞춘 실 고객사 경로 전용 참고값이다.
+_SCP_VM_MONTHLY_KRW = 178200.0
+_AWS_VM_MONTHLY_KRW = 87750.0
+
 class FinOpsService:
     """
     Phase 4 FinOps 비용 최적화 및 비용 이상탐지 비즈니스 서비스
@@ -23,21 +29,23 @@ class FinOpsService:
         
         avg_amount = sum(history) / len(history)
         
-        # 최근 평균 대비 지정된 비율(기본 30% 증가)을 초과하고 절대 비용 편차가 $15.0 이상인 경우 이상치 판정
+        # 최근 평균 대비 지정된 비율(기본 30% 증가)을 초과하고 절대 비용 편차가 ₩10,000 이상인 경우 이상치 판정
+        # (본 플랫폼은 원화(KRW)만 취급하므로 편차 하한도 원화 기준으로 설정한다)
         if avg_amount > 0 and (current["amount"] / avg_amount) >= surge_threshold_ratio:
             diff = current["amount"] - avg_amount
-            if diff >= 10.0:
+            if diff >= 10000:
                 logger.warning(
                     f"[FinOps 비용 이상 감지] 날짜: {current['date']}, "
-                    f"이전 평균: ${avg_amount:.2f}, 당일 요금: ${current['amount']:.2f} (차액: +${diff:.2f})"
+                    f"이전 평균: ₩{avg_amount:,.0f}, 당일 요금: ₩{current['amount']:,.0f} (차액: +₩{diff:,.0f})"
                 )
                 anomalies.append({
                     "date": current["date"],
                     "average_amount": avg_amount,
                     "anomaly_amount": current["amount"],
                     "difference": diff,
-                    "severity": "CRITICAL" if diff >= 50.0 else "WARNING",
-                    "reason": f"최근 평균 일일 비용(${avg_amount:.2f}) 대비 당일 요금이 {(current['amount']/avg_amount*100 - 100):.1f}% 급증하였습니다."
+                    # 편차가 ₩50,000 이상이면 CRITICAL, 미만이면 WARNING으로 구분
+                    "severity": "CRITICAL" if diff >= 50000 else "WARNING",
+                    "reason": f"최근 평균 일일 비용(₩{avg_amount:,.0f}) 대비 당일 요금이 {(current['amount']/avg_amount*100 - 100):.1f}% 급증하였습니다."
                 })
                 
         return anomalies
@@ -73,8 +81,8 @@ class FinOpsService:
             
             # A. 유휴 상태(Idle) 인스턴스: 스케일다운 추천
             if avg_cpu < 5.0:
-                current_cost = 80.0 if provider == "scp" else 64.0
-                target_cost = 40.0 if provider == "scp" else 16.0
+                current_cost = _SCP_VM_MONTHLY_KRW if provider == "scp" else _AWS_VM_MONTHLY_KRW
+                target_cost = current_cost / 2.0
                 savings = current_cost - target_cost
                 
                 recommendations.append({
@@ -86,13 +94,13 @@ class FinOpsService:
                     "current_monthly_cost": current_cost,
                     "target_monthly_cost": target_cost,
                     "savings": savings,
-                    "recommendation_text": f"인스턴스 타입을 1단계 축소하여 월간 ${savings:.2f} 비용을 최적화하십시오."
+                    "recommendation_text": f"인스턴스 타입을 1단계 축소하여 월간 ₩{savings:,.0f} 비용을 최적화하십시오."
                 })
                 
             # B. 과부하 상태(Overloaded) 인스턴스: 장애 방지용 스케일업 추천
             elif avg_cpu > 80.0:
-                current_cost = 80.0 if provider == "scp" else 64.0
-                target_cost = 160.0 if provider == "scp" else 128.0
+                current_cost = _SCP_VM_MONTHLY_KRW if provider == "scp" else _AWS_VM_MONTHLY_KRW
+                target_cost = current_cost * 2.0
                 
                 recommendations.append({
                     "node_id": node_id,

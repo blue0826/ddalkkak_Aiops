@@ -7,7 +7,7 @@ from loguru import logger
 
 def get_master_kek() -> Fernet:
     """
-    JWT Secret을 기반으로 PBKDF2를 사용하여 32바이트 마스터 키(KEK)를 유도합니다.
+    전용 마스터 키(MASTER_KEK) 기반으로 PBKDF2를 사용하여 32바이트 마스터 키(KEK)를 유도합니다.
     """
     salt = b"aiops_master_salt_12345"
     kdf = PBKDF2HMAC(
@@ -16,7 +16,7 @@ def get_master_kek() -> Fernet:
         salt=salt,
         iterations=100000,
     )
-    key = base64.urlsafe_b64encode(kdf.derive(settings.JWT_SECRET.encode("utf-8")))
+    key = base64.urlsafe_b64encode(kdf.derive(settings.MASTER_KEK.encode("utf-8")))
     return Fernet(key)
 
 class EnvelopeEncryptor:

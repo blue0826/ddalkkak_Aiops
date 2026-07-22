@@ -1,13 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
 from backend.app.db.session import get_db
-from backend.app.core.auth import User, get_current_user
+from backend.app.core.auth import User, get_current_user, RoleChecker
+from backend.app.core.license import check_license_write_gate
 from backend.app.services.finops_service import FinOpsService
-from backend.app.services.incident_service import IncidentService
+from backend.app.services.incident_service import IncidentService, RemediationStateError
+from backend.app.services.monitoring_service import MonitoringService
 from backend.app.repositories.incident import IncidentRepository
+from backend.app.repositories.alert import AlertRepository
 from typing import List, Dict, Any
 
 router = APIRouter(prefix="/aiops", tags=["AIOps Advanced"])
+
+@router.post("/detection/run")
+async def run_detection_cycle(
+    current_user: User = Depends(RoleChecker(["SYSTEM_ADMIN", "TENANT_OPERATOR"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    탐지 사이클 온디맨드 실행 API.
+    현재 테넌트 소속 인프라를 스캔하여 L1(임계치) + L2(이상탐지) + L3(노이즈 억제)를
+    한 번에 수행하고, 신규 발행된 인시던트를 포함한 요약 결과를 반환합니다.
+    """
+    incident_repo = IncidentRepository(db)
+    alert_repo = AlertRepository(db)
+    service = MonitoringService(incident_repo, alert_repo)
+    result = await service.run_detection_cycle(tenant_id=current_user.tenant_id)
+    return result
 
 @router.get("/costs/simulate-rightsizing")
 async def simulate_rightsizing(
@@ -67,18 +87,17 @@ async def get_incident_timeline_cards(
         )
     return cards
 
-class ScriptRunRequest(KeyError): # pydantic Request body 용
-    pass
-
-from pydantic import BaseModel
-class ScriptRequest(BaseModel):
+class ScriptRunRequest(BaseModel):  # pydantic Request body 용
     script: str
 
-@router.post("/incidents/{id}/run-action-script")
+@router.post(
+    "/incidents/{id}/run-action-script",
+    dependencies=[Depends(check_license_write_gate)]
+)
 async def run_action_script(
     id: int,
-    req_body: ScriptRequest,
-    current_user: User = Depends(get_current_user),
+    req_body: ScriptRunRequest,
+    current_user: User = Depends(RoleChecker(["SYSTEM_ADMIN", "TENANT_OPERATOR"])),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -86,12 +105,15 @@ async def run_action_script(
     """
     repo = IncidentRepository(db)
     service = IncidentService(repo)
-    result = await service.run_action_script(
-        incident_id=id,
-        tenant_id=current_user.tenant_id,
-        script=req_body.script,
-        actor=current_user.email
-    )
+    try:
+        result = await service.run_action_script(
+            incident_id=id,
+            tenant_id=current_user.tenant_id,
+            script=req_body.script,
+            actor=current_user.email
+        )
+    except RemediationStateError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     if result.get("status") == "FAILED":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

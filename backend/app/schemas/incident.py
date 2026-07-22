@@ -12,6 +12,10 @@ class IncidentResponse(BaseModel):
     assigned_to: Optional[str] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None
+    # L5 추천→승인→실행 3단계 상태머신 (프론트 버튼 상태 렌더용)
+    remediation_status: str = "NONE"
+    remediation_action: Optional[str] = None
+    remediation_approved_by: Optional[str] = None
 
     class Config:
         from_attributes = True

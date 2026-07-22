@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
 from backend.app.db.session import get_db
 from backend.app.core.auth import User, get_current_user, RoleChecker
 from backend.app.schemas.credential import CredentialCreate, CredentialResponse
 from backend.app.repositories.credential import CredentialRepository
 from backend.app.repositories.alert import AlertRepository
+from backend.app.repositories.tenant import TenantRepository
 from backend.app.services.credential_service import CredentialService
+from backend.app.core.license import check_license_write_gate
 from loguru import logger
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
@@ -16,15 +19,36 @@ def get_credential_service(db: AsyncSession = Depends(get_db)) -> CredentialServ
     alert_repo = AlertRepository(db)
     return CredentialService(cred_repo, alert_repo)
 
-@router.post("", response_model=CredentialResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CredentialResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_license_write_gate)]
+)
 async def create_credential(
     payload: CredentialCreate,
     current_user: User = Depends(RoleChecker(allowed_roles=["SYSTEM_ADMIN", "TENANT_OPERATOR"])),
+    db: AsyncSession = Depends(get_db),
     service: CredentialService = Depends(get_credential_service)
 ):
     logger.info(f"자격증명 생성 API 요청 수신 - Name: {payload.name}")
+
+    # 관리자가 tenant_id를 지정하면 해당 고객사 앞으로 등록(대신 온보딩), 그 외에는
+    # 본인 소속 테넌트로 강제한다(비관리자는 tenant_id를 보내도 무시됨).
+    is_admin_target = current_user.role == "SYSTEM_ADMIN" and payload.tenant_id
+    effective_tenant_id = payload.tenant_id if is_admin_target else current_user.tenant_id
+
+    if is_admin_target:
+        tenant_repo = TenantRepository(db)
+        target_tenant = await tenant_repo.get_by_id(effective_tenant_id)
+        if not target_tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"대상 고객사(테넌트)를 찾을 수 없습니다: {effective_tenant_id}"
+            )
+
     return await service.register_credential(
-        tenant_id=current_user.tenant_id,
+        tenant_id=effective_tenant_id,
         provider=payload.provider,
         name=payload.name,
         auth_data=payload.auth_data,
@@ -33,11 +57,19 @@ async def create_credential(
 
 @router.get("", response_model=List[CredentialResponse])
 async def list_credentials(
+    tenant_id: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     service: CredentialService = Depends(get_credential_service)
 ):
-    logger.info("자격증명 목록 API 조회 요청 수신")
-    return await service.list_credentials(tenant_id=current_user.tenant_id)
+    # 관리자는 tenant_id로 특정 고객사만 조회하거나, 생략 시 전 고객사 자격증명을
+    # 한 번에 조회할 수 있다(MSP 통합 관리). 비관리자는 항상 본인 테넌트만 조회된다.
+    if current_user.role == "SYSTEM_ADMIN":
+        target_tenant_id = tenant_id if tenant_id else "system"
+    else:
+        target_tenant_id = current_user.tenant_id
+
+    logger.info(f"자격증명 목록 API 조회 요청 수신 - 대상 테넌트: {target_tenant_id}")
+    return await service.list_credentials(tenant_id=target_tenant_id)
 
 @router.delete("/{credential_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_credential(
@@ -66,7 +98,8 @@ async def get_decrypted_credential(
     logger.info(f"자격증명 복호화 조회 API 요청 수신 - ID: {credential_id}")
     decrypted = await service.get_decrypted_credential(
         credential_id=credential_id,
-        tenant_id=current_user.tenant_id
+        tenant_id=current_user.tenant_id,
+        user_email=current_user.email
     )
     if not decrypted:
         raise HTTPException(
@@ -75,7 +108,7 @@ async def get_decrypted_credential(
         )
     return decrypted
 
-@router.post("/test-scp")
+@router.post("/test-scp", dependencies=[Depends(check_license_write_gate)])
 async def test_scp_connection(
     access_key: str,
     secret_key: str,
@@ -103,7 +136,9 @@ async def test_scp_connection(
         endpoint_url=endpoint_url
     )
 
-    test_res = adapter.test_connection()
+    # SCP의 test_connection은 동기 urllib 호출이므로 스레드풀로 위임하여
+    # 이벤트루프 블로킹(최대 10초)을 방지한다 (로직 자체는 어댑터 내부 그대로 유지)
+    test_res = await run_in_threadpool(adapter.test_connection)
 
     # 연동성 테스트가 성공한 경우, 해당 계정을 테넌트 자격증명으로 DB에 암호화 저장/업데이트
     if test_res.get("status") == "SUCCESS":

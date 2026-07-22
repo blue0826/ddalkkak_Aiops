@@ -169,7 +169,7 @@ if menu == "통합 대시보드 (Dashboard)":
     try:
         r_cost = requests.get(f"{BACKEND_URL}/monitor/costs?tenant_id={active_tenant}", headers=headers)
         if r_cost.status_code == 200:
-            monthly_cost = f"${r_cost.json()['monthly_total']:.2f}"
+            monthly_cost = f"₩{r_cost.json()['monthly_total']:,.0f}"
     except Exception:
         pass
         
@@ -382,9 +382,9 @@ elif menu == "FinOps 비용 (Costs)":
             
             c1, c2 = st.columns(2)
             with c1:
-                st.metric("월 예상 총 요금", f"${cost_data['monthly_total']:.2f}")
+                st.metric("월 예상 총 요금", f"₩{cost_data['monthly_total']:,.0f}")
             with c2:
-                st.metric("일별 평균 요금", f"${cost_data['daily_average']:.2f}")
+                st.metric("일별 평균 요금", f"₩{cost_data['daily_average']:,.0f}")
                 
             st.subheader("📅 최근 7일 비용 추이")
             df_trends = pd.DataFrame(cost_data["daily_trends"])
@@ -402,8 +402,8 @@ elif menu == "FinOps 비용 (Costs)":
                         <h5 style='color:#f0883f;'>대상 자원: <code>{r['node_id']}</code></h5>
                         <p><strong>진단 사유</strong>: {r['reason']}</p>
                         <p><strong>추천 조치</strong>: {r['action']}</p>
-                        <p>현재 월 비용: <strong>${r['current_monthly_cost']:.2f}</strong> → 변경 후 월 비용: <strong>${r['target_monthly_cost']:.2f}</strong></p>
-                        <h4 style='color:#7ee787;'>예상 월 절감액: ${r['savings']:.2f}</h4>
+                        <p>현재 월 비용: <strong>₩{r['current_monthly_cost']:,.0f}</strong> → 변경 후 월 비용: <strong>₩{r['target_monthly_cost']:,.0f}</strong></p>
+                        <h4 style='color:#7ee787;'>예상 월 절감액: ₩{r['savings']:,.0f}</h4>
                     </div>
                     """, unsafe_allow_html=True)
     except Exception as e:

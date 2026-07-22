@@ -52,6 +52,19 @@ class AlertRepository:
         await self.session.commit()
         return True
 
+    async def delete_all_rules_by_tenant(self, tenant_id: str) -> int:
+        """
+        테넌트 소속 전체 경보 룰을 일괄 삭제합니다 (테넌트 삭제 시 고아 방지용).
+        """
+        logger.info(f"테넌트 전체 경보 룰 DB 일괄 삭제: {tenant_id}")
+        stmt = select(AlertRule).where(AlertRule.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        rules = list(result.scalars().all())
+        for rule in rules:
+            await self.session.delete(rule)
+        await self.session.commit()
+        return len(rules)
+
     async def create_audit_log(self, audit_log: AuditLog) -> AuditLog:
         """
         작업 내역을 감사 로그로 기록합니다 (회사 보안 룰).

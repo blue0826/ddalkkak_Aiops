@@ -6,6 +6,7 @@ from backend.app.core.auth import User, get_current_user, RoleChecker
 from backend.app.schemas.alert import AlertRuleCreate, AlertRuleResponse, AuditLogResponse
 from backend.app.repositories.alert import AlertRepository
 from backend.app.services.alert_service import AlertService
+from backend.app.core.license import check_license_write_gate
 from loguru import logger
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
@@ -14,7 +15,12 @@ def get_alert_service(db: AsyncSession = Depends(get_db)) -> AlertService:
     alert_repo = AlertRepository(db)
     return AlertService(alert_repo)
 
-@router.post("/rules", response_model=AlertRuleResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/rules",
+    response_model=AlertRuleResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_license_write_gate)]
+)
 async def create_rule(
     payload: AlertRuleCreate,
     current_user: User = Depends(RoleChecker(allowed_roles=["SYSTEM_ADMIN", "TENANT_OPERATOR"])),

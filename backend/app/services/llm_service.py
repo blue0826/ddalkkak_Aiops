@@ -1,22 +1,85 @@
 from backend.app.models.base import Incident, IncidentTimeline
 from backend.app.core.config import settings
+from backend.app.services.llm_gateway import get_llm_gateway
 from typing import List, Dict
 from datetime import datetime
 from loguru import logger
 
+# 폴백(규칙 기반) 전용 라벨 - "AI 분석"이라 단정하지 않고 규칙 기반임을 정직하게 표기
+_FALLBACK_ENGINE_LABEL = "규칙 기반 분석 (LLM 미연결)"
+
+_RCA_SYSTEM_PROMPT = (
+    "당신은 한국어로만 응답하는 AIOps MSP 플랫폼의 SRE 어시스턴트입니다. "
+    "주어진 인시던트 정보와 타임라인을 바탕으로 근본원인분석(RCA)을 수행하십시오. "
+    "반드시 아래 3개 구간 마커를 정확히 사용하여 응답하십시오(마커 앞뒤 다른 문구 금지):\n"
+    "[요약]\n(장애 상황을 1~2문장으로 요약)\n"
+    "[근본원인]\n(추정 근본원인 분석)\n"
+    "[권장조치]\n(운영자가 즉시 수행할 구체적 조치를 번호 목록으로 제시)"
+)
+
+
+def _parse_llm_rca_sections(text: str) -> Dict[str, str]:
+    """
+    LLM 응답 텍스트에서 [요약]/[근본원인]/[권장조치] 마커 구간을 파싱한다.
+    마커를 찾을 수 없으면 전체 텍스트를 summary에 담아 정보 손실을 방지한다.
+    """
+    markers = [("summary", "[요약]"), ("probable_cause", "[근본원인]"), ("recommended_runbook", "[권장조치]")]
+    result = {key: "" for key, _ in markers}
+
+    found = [(text.find(marker), key, marker) for key, marker in markers if text.find(marker) != -1]
+    if not found:
+        result["summary"] = text.strip()
+        return result
+
+    found.sort(key=lambda item: item[0])
+    for i, (idx, key, marker) in enumerate(found):
+        start = idx + len(marker)
+        end = found[i + 1][0] if i + 1 < len(found) else len(text)
+        result[key] = text[start:end].strip()
+
+    return result
+
+
 class LLMService:
     """
     L4 AI 운영 비서 및 월간 보고서 자동화 서비스
-    외부 LLM API 호출 지원 및 에어갭 오프라인 환경용 로컬 NLP 분석 하이브리드 엔진 탑재
+    실 LLM 게이트웨이(옵트인) 연동 + 에어갭 오프라인 환경용 로컬 NLP 분석 하이브리드 엔진 탑재.
+    키가 설정되지 않으면(기본값) 항상 규칙 기반 텍스트로 폴백한다.
     """
-    
+
     @staticmethod
     async def generate_incident_rca(incident: Incident, timeline: List[IncidentTimeline]) -> Dict[str, str]:
         """
-        장애 인시던트의 타임라인 및 로그 내역을 기반으로 AI 요약, 근본원인(RCA), 권장 런북을 도출합니다.
+        장애 인시던트의 타임라인 및 로그 내역을 기반으로 요약, 근본원인(RCA), 권장 런북을 도출합니다.
+        실 LLM 게이트웨이가 연결되어 있으면 해당 응답을 사용하고, 아니면(기본값) 규칙 기반
+        도메인 텍스트로 폴백합니다. 반환 dict의 "engine" 필드로 실제 사용된 방식을 명시합니다.
         """
         logger.info(f"[AI 분석 가동] 인시던트 ID: {incident.id} 분석 수행 중...")
-        
+
+        gateway = get_llm_gateway()
+        timeline_text = "\n".join(
+            f"- [{t.event_type}] {t.actor}: {t.message}" for t in timeline
+        ) or "(타임라인 기록 없음)"
+        user_prompt = (
+            f"인시던트 제목: {incident.title}\n"
+            f"설명: {incident.description or '(설명 없음)'}\n"
+            f"심각도: {incident.severity}\n"
+            f"타임라인:\n{timeline_text}"
+        )
+
+        llm_text = await gateway.complete(system=_RCA_SYSTEM_PROMPT, prompt=user_prompt)
+        if llm_text:
+            parsed = _parse_llm_rca_sections(llm_text)
+            logger.info(f"[AI 분석 완료 - 실 LLM] 인시던트 ID: {incident.id}, 엔진: {gateway.mode}")
+            return {
+                "summary": parsed["summary"] or llm_text.strip(),
+                "probable_cause": parsed["probable_cause"],
+                "recommended_runbook": parsed["recommended_runbook"],
+                "analyzed_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+                "engine": gateway.mode,
+            }
+
+        # ---- 폴백: 로컬 고신뢰도 NLP 템플릿 기반 초안 생성 (에어갭 완벽 지원, 규칙 기반) ----
         # 1. 장애 유형 파악을 위한 키워드 검사
         title_lower = incident.title.lower()
         desc_lower = (incident.description or "").lower()
@@ -105,28 +168,54 @@ class LLMService:
                 "2. 실시간 로그 스트림 뷰어를 열어 비정상 예외 트레이스(Exception Trace)가 발생하는지 대조하십시오."
             )
 
-        logger.info(f"[AI 분석 완료] 인시던트 ID: {incident.id} RCA 도출 성공")
+        logger.info(f"[AI 분석 완료 - 규칙 기반 폴백] 인시던트 ID: {incident.id} RCA 도출 성공")
         return {
             "summary": summary,
             "probable_cause": rca,
             "recommended_runbook": runbook,
-            "analyzed_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            "analyzed_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            "engine": _FALLBACK_ENGINE_LABEL
         }
 
     @staticmethod
     async def generate_monthly_report(
-        tenant_id: str, 
-        active_vms: int, 
-        alarms_count: int, 
-        total_costs: float, 
+        tenant_id: str,
+        active_vms: int,
+        alarms_count: int,
+        total_costs: float,
         savings: float
     ) -> str:
         """
         MSP 고객사 보고용 월간 운영 보고서 초안(Markdown 포맷)을 생성합니다.
+        통화는 헌법 원칙(순수 원화)에 따라 원화(₩)로 표기합니다.
         """
         current_month = datetime.utcnow().strftime("%Y년 %m월")
         sla_value = 99.98 if alarms_count < 5 else (99.92 if alarms_count < 15 else 99.85)
-        
+
+        # 종합 의견 섹션 - 실 LLM 게이트웨이가 연결되어 있으면 해당 응답을 사용하고,
+        # None이면(template 모드 등) 기존 규칙 기반 문구를 그대로 유지한다.
+        gateway = get_llm_gateway()
+        llm_opinion = await gateway.complete(
+            system=(
+                "당신은 한국어로만 응답하는 MSP 클라우드 운영 보고서 작성자입니다. "
+                "제공된 월간 운영 지표를 바탕으로 2~4문장의 간결한 종합 의견 및 대응 권고를 작성하십시오. "
+                "마크다운 제목이나 마커 없이 본문 문장만 작성하십시오."
+            ),
+            prompt=(
+                f"테넌트: {tenant_id}\n"
+                f"관제 대상 인프라: {active_vms}대\n"
+                f"월간 이상징후 알람: {alarms_count}건\n"
+                f"월간 가용성(SLA): {sla_value}%\n"
+                f"당월 누적 총 요금: ₩{total_costs:,.0f}\n"
+                f"예상 절감 가능액: ₩{savings:,.0f}"
+            ),
+        )
+        opinion_text = llm_opinion.strip() if llm_opinion else (
+            "당월 모니터링 지표 상, CPU 및 메모리 가용 자원이 전반적으로 안정적으로 유지되었습니다. "
+            "단, 가상 알림 기록상 간헐적인 커넥션 임계치 스파이크가 2회 관측되었으므로 다음 점검 주기 시 "
+            "WAS 커넥션 풀 크기 상향 조정을 권고합니다."
+        )
+
         report = f"""# 월간 클라우드 운영 보고서 ({current_month}분)
 
 본 보고서는 테넌트 `{tenant_id}` 고객사의 삼성클라우드플랫폼(SCP) 및 AWS 인프라 모니터링 요약과 비용 권장 리포트입니다.
@@ -137,15 +226,15 @@ class LLMService:
 - **관제 대상 인프라 자원**: VM 및 DB 총 `{active_vms} Nodes`
 - **월간 이상징후 알람 발생 건수**: 총 `{alarms_count} 건`
 - **월간 시스템 가용성 가치 (SLA)**: `{sla_value}%` (목표치 99.9% 충족)
-- **보안 및 규정 감사 결과**: 
-  - PostgreSQL RLS(행수준격리) 정책 가동: **정상 (통제 완료)**
-  - 민감 자산 봉투 암호화(Envelope Encryption): **정상 (마스터키 암호화 보안 강제 적용 중)**
+- **보안 및 규정 감사 결과**:
+  - 테넌트 데이터 격리: 애플리케이션 레벨 테넌트 필터(tenant_id) 적용 중
+  - 클라우드 연동 자격증명: 봉투 암호화(Envelope Encryption) 적용 중
 
 ---
 
 ## 2. FinOps 비용 최적화 분석 (Rightsizing)
-- **당월 누적 총 요금**: `${total_costs:,.2f}`
-- **조치 시 예상 월 절감 가능액**: `${savings:,.2f}` (현재 비용 대비 약 {(savings/total_costs*100) if total_costs > 0 else 0:.1f}% 절감 가능)
+- **당월 누적 총 요금**: `₩{total_costs:,.2f}`
+- **조치 시 예상 월 절감 가능액**: `₩{savings:,.2f}` (현재 비용 대비 약 {(savings/total_costs*100) if total_costs > 0 else 0:.1f}% 절감 가능)
 
 ### 💡 주요 절감 대상 제안 항목:
 1. **저유용 인스턴스 Rightsizing**:
@@ -156,7 +245,7 @@ class LLMService:
 ---
 
 ## 3. 종합 의견 및 AIOps 대응 권고
-당월 모니터링 지표 상, CPU 및 메모리 가용 자원이 전반적으로 안정적으로 유지되었습니다. 단, 가상 알림 기록상 간헐적인 커넥션 임계치 스파이크가 2회 관측되었으므로 다음 점검 주기 시 WAS 커넥션 풀 크기 상향 조정을 권고합니다.
+{opinion_text}
 
 * **생성 일시**: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 * **관제 수행**: ddalkkak AIOps 자동화 엔진

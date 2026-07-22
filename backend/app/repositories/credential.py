@@ -51,3 +51,16 @@ class CredentialRepository:
         await self.session.delete(credential)
         await self.session.commit()
         return True
+
+    async def delete_all_by_tenant(self, tenant_id: str) -> int:
+        """
+        테넌트 소속 전체 자격증명을 일괄 삭제합니다 (테넌트 삭제 시 고아 방지용).
+        """
+        logger.info(f"테넌트 전체 자격증명 DB 일괄 삭제: {tenant_id}")
+        stmt = select(CloudCredential).where(CloudCredential.tenant_id == tenant_id)
+        result = await self.session.execute(stmt)
+        credentials = list(result.scalars().all())
+        for credential in credentials:
+            await self.session.delete(credential)
+        await self.session.commit()
+        return len(credentials)

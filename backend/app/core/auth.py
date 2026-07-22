@@ -4,40 +4,26 @@ from typing import Optional, List
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
+from passlib.context import CryptContext
 from backend.app.core.config import settings
 from loguru import logger
-import hashlib
 
 # FastAPI oauth2 스키마 정의
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
-# 비밀번호 SHA-256 해싱 헬퍼 (의존성 무관 작동 보장)
+# 비밀번호 bcrypt 해싱 컨텍스트
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return hash_password(plain_password) == hashed_password
+    return pwd_context.verify(plain_password, hashed_password)
 
 class User(BaseModel):
     email: str
     tenant_id: str
     role: str
-
-# 환경 설정으로부터 가상 사용자 계정 데이터베이스 파싱
-MOCK_USERS_DB = {}
-for user_str in settings.MOCK_USERS_RAW.split(","):
-    parts = user_str.split(":")
-    if len(parts) == 4:
-        email, pwd, tenant_id, role = parts
-        MOCK_USERS_DB[email] = {
-            "email": email,
-            "hashed_password": hash_password(pwd),
-            "tenant_id": tenant_id,
-            "role": role
-        }
-
-def get_user_by_email(email: str) -> Optional[dict]:
-    return MOCK_USERS_DB.get(email)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
