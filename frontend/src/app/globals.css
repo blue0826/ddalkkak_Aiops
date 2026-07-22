@@ -1,27 +1,258 @@
-@import "tailwindcss";
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+@import "tailwindcss";
 
+/*
+ * 디자인 토큰 레이어 — docs/ai-ops-dashboard-design-guide.md §4 기준.
+ * 컴포넌트는 원시 hex/px 대신 이 토큰만 참조한다 (var(--token) 또는 Tailwind
+ * 임의값 유틸 bg-[var(--bg-1)] 형태로 사용).
+ */
 :root {
-  --background: #060913; /* Deep Slate dark background */
+  /* Surface — 다크 우선. box-shadow 대신 배경 lift + 1px border로 elevation 표현 (§4.4) */
+  --bg-0: #060913; /* 페이지 배경 */
+  --bg-1: #0d121f; /* 카드 배경 */
+  --bg-2: #1a2233; /* hover / raised */
+  --border: #1e293b; /* 1px, 저대비 */
+
   --foreground: #f8fafc;
+  --muted: #8b96a8;
+
+  /* 브랜드 액센트 — 1개 (링크·주요 액션·활성 내비·선택 상태) */
+  --brand: #3b82f6;
+
+  /* 상태색 — 의미 전용 예약어. 장식 용도로 사용 금지 (§4.3) */
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --crit: #ef4444;
+
+  /* 상태색 배경/테두리 파생 — 배지·칩용 저채도 변형 */
+  --ok-bg: color-mix(in srgb, var(--ok) 14%, transparent);
+  --ok-border: color-mix(in srgb, var(--ok) 38%, transparent);
+  --warn-bg: color-mix(in srgb, var(--warn) 14%, transparent);
+  --warn-border: color-mix(in srgb, var(--warn) 38%, transparent);
+  --crit-bg: color-mix(in srgb, var(--crit) 14%, transparent);
+  --crit-border: color-mix(in srgb, var(--crit) 38%, transparent);
+
+  /* 차트 계열색 — 비-의미 시리즈용 중립/블루 램프, 최대 5개 (§4.3) */
+  --chart-1: #60a5fa;
+  --chart-2: #38bdf8;
+  --chart-3: #818cf8;
+  --chart-4: #94a3b8;
+  --chart-5: #475569;
+
+  /* 프로바이더 액센트 — backend/app/core/providers.py PROVIDER_REGISTRY.accent_color와 동일 값 유지 */
+  --accent-scp: #1e4fd8;
+  --accent-aws: #ff9900;
+
+  /* Radius (§4.4) — consumer-app 느낌의 큰 radius(16px) 금지 */
+  --radius-card: 8px;
+  --radius-input: 6px;
+  --radius-badge: 4px;
+
+  /* 타이포 스케일 — 이 6단계만 존재한다 (§4.1). font 단축 속성으로 사용: font: var(--text-kpi) */
+  --text-kpi: 600 34px/1.15 var(--font-sans);
+  --text-h1: 600 20px/1.3 var(--font-sans);
+  --text-h2: 600 15px/1.4 var(--font-sans);
+  --text-body: 400 13px/1.5 var(--font-sans);
+  --text-label: 500 12px/1.4 var(--font-sans);
+  --text-micro: 500 11px/1.3 var(--font-sans);
+
+  /* Tailwind bg-background / text-foreground 등 기존 유틸 호환용 별칭 */
+  --background: var(--bg-0);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
 body {
-  background: var(--background);
+  background: var(--bg-0);
   color: var(--foreground);
-  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* 🔢 Tabular numbers configuration to prevent horizontal text jitter on UI update */
-.num, td, .kpi-value, .recharts-cartesian-axis-tick-value, text, span {
-  font-variant-numeric: tabular-nums !important;
-  font-feature-settings: "tnum" 1 !important;
+/*
+ * 숫자 전용 tabular-nums (§4.1) — KPI 수치·테이블 수치 셀·차트 눈금에만 스코프한다.
+ * 모든 span/text에 !important로 강제하지 않는다(과잉 적용, 이전 구현의 버그).
+ * 사용법: 숫자를 표시하는 요소에 className="num" 또는 <td data-numeric> 부여.
+ */
+.num,
+td[data-numeric],
+.tabnum,
+.kpi-value,
+.recharts-cartesian-axis-tick-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
+/* 키보드 포커스 링 (§11 품질 기준) — 클릭 요소는 항상 보이는 포커스 표시를 가진다. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 실시간 LIVE 인디케이터 펄스 — 관제 월의 "살아있음" 신호. reduced-motion에서 자동 정지. */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+.live-pulse {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+/* 새 데이터 유입 시 한 번 강조(인시던트 라이브 피드 등) */
+@keyframes flash-in {
+  0% { background-color: var(--brand); opacity: 0.18; }
+  100% { background-color: transparent; opacity: 1; }
+}
+.flash-in {
+  animation: flash-in 1.4s ease-out 1;
+}
+
+/* 차트 리딩 엣지(최신 지점) 펄스 링 — "지금 들어오는 데이터" 신호. SVG r/opacity 애니메이션. */
+@keyframes live-ring {
+  0% { r: 3px; opacity: 0.55; }
+  100% { r: 10px; opacity: 0; }
+}
+.live-ring {
+  animation: live-ring 1.6s ease-out infinite;
+}
+
+/* KPI 값이 갱신될 때 한 번 반짝(실시간 느낌). */
+@keyframes value-flash {
+  0% { color: var(--brand); }
+  100% { color: inherit; }
+}
+.value-flash {
+  animation: value-flash 0.9s ease-out 1;
+}
+
+/* ── 관제 월 "휘황찬란" 실시간 효과 (reduced-motion에서 자동 정지) ── */
+
+/*
+ * 카드 회전 테두리(스네이크) — conic-gradient를 transform:rotate로 돌려 테두리를 따라
+ * 빛 세그먼트가 흐른다. @property에 의존하지 않아 어느 브라우저에서도 실제로 회전한다.
+ * .fx-card는 카드의 border/background를 대신 제공하므로, 적용 시 원래 border/bg는 제거한다.
+ */
+.fx-card {
+  position: relative;
+  z-index: 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.fx-card::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  left: 50%;
+  top: 50%;
+  width: 280%;
+  height: 280%;
+  transform: translate(-50%, -50%);
+  /* 기본 테두리에 브랜드빛을 은은히 깔고, 두 개의 밝은 아크가 돌게 해서 확실히 보이게 */
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--brand) 28%, var(--border)) 0turn,
+    color-mix(in srgb, var(--brand) 28%, var(--border)) 0.34turn,
+    var(--brand) 0.44turn,
+    var(--chart-2) 0.50turn,
+    color-mix(in srgb, var(--brand) 28%, var(--border)) 0.58turn,
+    color-mix(in srgb, var(--brand) 28%, var(--border)) 0.84turn,
+    var(--brand) 0.92turn,
+    var(--chart-2) 0.97turn,
+    color-mix(in srgb, var(--brand) 28%, var(--border)) 1turn
+  );
+  animation: fx-rotate 2.8s linear infinite;
+  pointer-events: none;
+}
+.fx-card::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 2.5px; /* 두꺼운 테두리 */
+  border-radius: calc(var(--radius-card) - 2px);
+  /* 상단이 살짝 밝은 깊이감 그라데이션 위에 카드 배경 */
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-2) 60%, transparent), transparent 42%),
+    var(--bg-1);
+  pointer-events: none;
+}
+@keyframes fx-rotate {
+  to { transform: translate(-50%, -50%) rotate(1turn); }
+}
+
+/* 라이브 글로우 — 상시 은은히 빛나고 숨쉰다(경고 카드는 --glow-color로 오버라이드). 강하게. */
+@keyframes live-glow {
+  0%, 100% { box-shadow: 0 0 10px 0 color-mix(in srgb, var(--glow-color, var(--brand)) 20%, transparent); }
+  50% { box-shadow: 0 0 26px 3px color-mix(in srgb, var(--glow-color, var(--brand)) 45%, transparent); }
+}
+.live-glow {
+  animation: live-glow 2.4s ease-in-out infinite;
+}
+
+/* 차트 라인 마칭 흐름 — 라인을 따라 데이터가 흐르는 대시(Recharts curve path 타겟). */
+@keyframes flow-dash {
+  to { stroke-dashoffset: -32; }
+}
+.flow-line .recharts-curve,
+.flow-line .recharts-line-curve {
+  stroke-dasharray: 3 9;
+  animation: flow-dash 1s linear infinite;
+}
+
+/* 로그 자막 티커 — 오른쪽→왼쪽으로 흐르는 마퀴. 내용 2회 반복으로 무한 루프. hover 시 정지. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 40s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* 차트 스캔 스윕 — 좌→우로 지나가는 옅은 광택 오버레이. */
+@keyframes scan-sweep {
+  0% { transform: translateX(-30%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+.scan-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand) 10%, transparent), transparent);
+  width: 40%;
+  animation: scan-sweep 4s ease-in-out infinite;
+}
+
+/* 로그 라이브 피드 — 새 행이 위에서 슬라이드-인 하며 한 번 강조. */
+@keyframes log-row-in {
+  0% { transform: translateY(-6px); opacity: 0; background-color: color-mix(in srgb, var(--brand) 14%, transparent); }
+  100% { transform: translateY(0); opacity: 1; background-color: transparent; }
+}
+.log-row-in {
+  animation: log-row-in 0.7s ease-out 1;
+}
+
+/*
+ * 동작(모션) 억제 — 관제 월 디스플레이는 기본적으로 효과를 켠다(data-motion="on").
+ * 사용자가 필터바의 "효과" 토글로 끄면(data-motion="off") 모든 애니메이션/트랜지션을 즉시 처리한다.
+ * (OS의 prefers-reduced-motion에 무조건 따르지 않는 이유: 운영자가 벽 디스플레이에서
+ *  실시간 흐름 효과를 명시적으로 원하기 때문. 접근성이 필요한 사용자는 토글로 끌 수 있다.)
+ */
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
