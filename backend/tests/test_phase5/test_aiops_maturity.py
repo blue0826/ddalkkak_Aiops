@@ -70,17 +70,21 @@ def test_secops_soar_containment():
 def test_simulator_integrated_api_state():
     """
     시뮬레이터와 비즈니스 레이어 간 연동 데이터 변경 유효성을 검증합니다.
+
+    CEO 지시(2026-07-15): 회선 상태의 초기값은 더 이상 하드코딩된 "ACTIVE"가 아니라
+    실 네트워크 모니터링 미연동을 뜻하는 중립값("UNKNOWN")이다. 이 테스트는 초기값 자체가
+    아니라 trigger_network_incident/recover_network(운영자가 명시적으로 호출하는 DR
+    훈련/복구 액션)의 상태 전이 로직을 검증한다.
     """
     # 1. IP 차단 시뮬레이터 연동
     ip = "192.0.2.55"
     assert ip not in simulator.get_blocked_ips("tenant-scp")
     simulator.block_ip_address("tenant-scp", ip)
     assert ip in simulator.get_blocked_ips("tenant-scp")
-    
+
     # 2. 전용선 강제 장애 주입
     paths = simulator.get_network_paths("tenant-scp")
-    assert paths["dedicated"]["status"] == "ACTIVE"
-    
+
     # 장애 주입
     simulator.trigger_network_incident("tenant-scp")
     assert paths["dedicated"]["status"] == "FAILED"

@@ -20,39 +20,41 @@ async def override_get_db():
     async with AsyncSessionLocal() as session:
         yield session
 
-app.dependency_overrides[get_db] = override_get_db
-
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
+    # 이 모듈의 테스트 실행 구간에만 get_db 오버라이드 적용 (타 테스트 모듈로의 오염 방지)
+    app.dependency_overrides[get_db] = override_get_db
+
     # 모듈 단위 실행 전 비동기 DB 테이블 스키마 생성 및 사용자 시딩
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     async def create_tables():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            
+
         async with AsyncSessionLocal() as session:
             tenant_repo = TenantRepository(session)
             await tenant_repo.create("tenant-scp", "SCP Client")
             await tenant_repo.create("tenant-aws", "AWS Client")
-            
+
             user_repo = UserRepository(session)
             user_service = UserService(user_repo)
             await user_service.register_user("op_scp@client.com", "op123!", "tenant-scp", "TENANT_OPERATOR")
             await user_service.register_user("op_aws@client.com", "op123!", "tenant-aws", "TENANT_OPERATOR")
-            
+
     loop.run_until_complete(create_tables())
     yield
-    
+
     async def drop_tables():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
     loop.run_until_complete(drop_tables())
     loop.run_until_complete(engine.dispose())
+    del app.dependency_overrides[get_db]
 
 client = TestClient(app)
 

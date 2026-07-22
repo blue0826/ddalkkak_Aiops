@@ -7,7 +7,7 @@ from backend.app.repositories.tenant import TenantRepository
 from backend.app.repositories.user import UserRepository
 from backend.app.repositories.incident import IncidentRepository
 from backend.app.services.user_service import UserService
-from backend.app.services.incident_service import IncidentService
+from backend.app.services.incident_service import IncidentService, RemediationStateError
 from backend.app.core.license import LicenseManager, check_license_write_gate
 from backend.app.routers.monitor import get_tenants, get_topology
 from backend.app.core.auth import User as AuthUser
@@ -92,8 +92,10 @@ async def test_dedicated_tenants_and_topology_isolation(mock_settings):
     mock_settings.DEPLOYMENT_PROFILE = "dedicated"
     
     # 1. /tenants 호출 시 MSP 리스트 대신 단일 전용 테넌트만 반환하는지 검사
+    # (Dedicated 모드에서는 DB 조회 없이 즉시 반환되므로 db 인자는 사용되지 않는다)
     user = AuthUser(email="sysadmin@company.com", tenant_id="system", role="SYSTEM_ADMIN")
-    tenants = get_tenants(current_user=user)
+    from unittest.mock import AsyncMock
+    tenants = await get_tenants(current_user=user, db=AsyncMock())
     assert len(tenants) == 1
     assert tenants[0]["id"] == "tenant-scp"
 
@@ -108,11 +110,12 @@ async def test_dedicated_tenants_and_topology_isolation(mock_settings):
 @pytest.mark.anyio
 async def test_remediate_incident_l5_flow(db_session):
     """
-    L5 자동조치(Remediation) 승인 가동 및 인시던트 해결(RESOLVED) 생명주기를 통합 테스트합니다.
+    L5 추천→승인→실행 3단계 상태머신 및 인시던트 해결(RESOLVED) 생명주기를 통합 테스트합니다.
+    승인(APPROVED) 없이는 실행이 거부되어야 한다 (헌법 #4: AI 추천, 사람 결정).
     """
     repo = IncidentRepository(db_session)
     service = IncidentService(repo)
-    
+
     # 가상 장애 생성
     incident = await service.create_incident(
         tenant_id="tenant-scp",
@@ -121,23 +124,47 @@ async def test_remediate_incident_l5_flow(db_session):
         severity="CRITICAL"
     )
     assert incident.status == "OPEN"
-    
-    # 자동조치 승인 실행
+    assert incident.remediation_status == "NONE"
+
+    # 승인 없이 즉시 실행 시도 -> 거부되어야 한다
+    with pytest.raises(RemediationStateError):
+        await service.remediate_incident(
+            incident_id=incident.id,
+            tenant_id="tenant-scp",
+            actor="op_scp@client.com"
+        )
+
+    # 1단계: 추천
+    recommended = await service.recommend_remediation(
+        incident_id=incident.id, tenant_id="tenant-scp", actor="op_scp@client.com"
+    )
+    assert recommended.remediation_status == "RECOMMENDED"
+    assert recommended.remediation_action
+
+    # 2단계: 승인
+    approved = await service.approve_remediation(
+        incident_id=incident.id, tenant_id="tenant-scp", actor="op_scp@client.com"
+    )
+    assert approved.remediation_status == "APPROVED"
+    assert approved.remediation_approved_by == "op_scp@client.com"
+
+    # 3단계: 실행 (구 API 호환 경로)
     resolved = await service.remediate_incident(
         incident_id=incident.id,
         tenant_id="tenant-scp",
         actor="op_scp@client.com"
     )
-    
+
     # 조치 완결성 검사
     assert resolved.status == "RESOLVED"
+    assert resolved.remediation_status == "EXECUTED"
     assert resolved.assigned_to == "op_scp@client.com"
     assert resolved.resolved_at is not None
-    
+
     # 타임라인 조치 트레일 검사
     details = await service.get_incident_details(incident.id, "tenant-scp")
     timeline_messages = [t.message for t in details["timeline"]]
-    
-    # 자동조치 및 재기동 완료 로그 포함 여부 검사
-    assert any("자동조치 명령" in m for m in timeline_messages)
+
+    # [시뮬레이션] 라벨 및 재기동 완료 로그 포함 여부 검사
+    assert any("[시뮬레이션]" in m for m in timeline_messages)
     assert any("Service restarted successfully" in m for m in timeline_messages)
